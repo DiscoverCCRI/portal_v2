@@ -1,0 +1,11 @@
+django
+django-bootstrap5
+django-crispy-forms
+django-fsm
+django-filter
+djangorestframework
+djangorestframework-simplejwt
+fontawesomefree
+markdown
+mozilla-django-oidc
+psycopg2-binary
