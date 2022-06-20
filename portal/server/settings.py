@@ -11,8 +11,8 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 """
 
 import os
-from pathlib import Path
 from datetime import timedelta
+from pathlib import Path
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -28,7 +28,6 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -43,7 +42,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'django_bootstrap5',  # django bootstrap
     'fontawesomefree',  # fontawesome free version
-    'portal.apps.mixins', # mixins
+    'portal.apps.mixins',  # mixins
     'portal.apps.users',  # custom user model
     'portal.apps.profiles',  # custom user profile
     'portal.apps.resources',
@@ -81,7 +80,9 @@ REST_FRAMEWORK = {
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     # 'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 5
+    'PAGE_SIZE': 5,
+    # metadata settings
+    'DEFAULT_METADATA_CLASS': 'portal.server.drf_settings.MinimalMetadata',
 }
 
 SIMPLE_JWT = {
@@ -141,7 +142,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'portal.server.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/4.0/ref/settings/#databases
 
@@ -155,7 +155,6 @@ DATABASES = {
         'PORT': os.getenv('POSTGRES_PORT')
     }
 }
-
 
 # Password validation
 # https://docs.djangoproject.com/en/4.0/ref/settings/#auth-password-validators
@@ -175,7 +174,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/4.0/topics/i18n/
 
@@ -186,7 +184,6 @@ TIME_ZONE = os.getenv('DJANGO_TIME_ZONE')
 USE_I18N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.0/howto/static-files/

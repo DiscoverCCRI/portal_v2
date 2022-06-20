@@ -9,7 +9,7 @@ class AerpawUserAdmin(UserAdmin):
     # add_form = AerpawUserCreationForm
     # form = AerpawUserChangeForm
     model = AerpawUser
-    list_display = ["email", "username",]
+    list_display = ["email", "username", ]
 
 
 admin.site.register(AerpawUser, AerpawUserAdmin)

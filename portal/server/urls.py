@@ -14,16 +14,19 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path, include
-from rest_framework import routers
-from portal.apps.users.api.viewsets import UserViewSet, GroupViewSet
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+from django.urls import include, path
 from django.views.generic.base import TemplateView
+from rest_framework import routers
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
+
+from portal.apps.projects.api.viewsets import ProjectViewSet
+from portal.apps.users.api.viewsets import UserViewSet
 
 # Routers provide an easy way of automatically determining the URL conf.
+# Ordering is important for overloaded API slugs with differing ViewSet definitions
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r'users', UserViewSet, basename='users')
-router.register(r'groups', GroupViewSet, basename='groups')
+router.register(r'projects', ProjectViewSet, basename='projects')
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.

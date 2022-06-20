@@ -1,8 +1,7 @@
-
 import os
-import jwt
 from datetime import datetime, timezone
 
+import jwt
 from django import template
 
 register = template.Library()

@@ -66,7 +66,7 @@
                                 <span class="text-danger">No Roles Found</span>
                             {% endif %}
                             {% for role in user_data.aerpaw_roles %}
-                                <strong>{{ role }}</strong><br>
+                                <strong>{{ role.role }}</strong><br>
                             {% endfor %}
                             {% csrf_token %}
                             <input class="message-btn btn btn-success"
@@ -87,7 +87,7 @@
                     <input class="message-btn btn btn-success"
                            type="submit"
                            name="authorization_token"
-                           value="Generate New Token"
+                           value="Generate New Tokens"
                            style="float: right">
                 </h3>
             </form>
@@ -95,18 +95,18 @@
                 <tbody>
                 <tr>
                     <td style="width: 25%">Access
-                        {% if user.profile.access_token %}
+                        {% if user_tokens.access_token %}
                             <br>
                             <span class="text-muted" style="font-size: small">
-                                Exp: {{ user.profile.access_token|token_expiry }}
+                                Exp: {{ user_tokens.access_token|token_expiry }}
                             </span>
                         {% endif %}
                     </td>
                     <td style="width: 75%">
-                        {% if user.profile.access_token %}
+                        {% if user_tokens.access_token %}
                             <form method="POST" class="post-form">
                                 {% csrf_token %}
-                                <input type="text" size="40" value="{{ user.profile.access_token }}" id="access_token"
+                                <input type="text" size="40" value="{{ user_tokens.access_token }}" id="access_token"
                                        disabled>
                                 <button class="message-btn btn btn-secondary" style="float: right; margin-left: 10px"
                                         onclick="copyAccessToken()">
@@ -126,16 +126,16 @@
                 </tr>
                 <tr>
                     <td style="width: 25%">Refresh
-                        {% if user.profile.refresh_token %}
+                        {% if user_tokens.refresh_token %}
                             <br>
                             <span class="text-muted" style="font-size: small">
-                                Exp: {{ user.profile.refresh_token|token_expiry }}
+                                Exp: {{ user_tokens.refresh_token|token_expiry }}
                             </span>
                         {% endif %}
                     </td>
                     <td style="width: 75%">
-                        {% if user.profile.refresh_token %}
-                            <input type="text" size="40" value="{{ user.profile.refresh_token }}" id="refresh_token"
+                        {% if user_tokens.refresh_token %}
+                            <input type="text" size="40" value="{{ user_tokens.refresh_token }}" id="refresh_token"
                                    disabled>
                             <button class="message-btn btn btn-secondary" style="float: right"
                                     onclick="copyRefreshToken()">

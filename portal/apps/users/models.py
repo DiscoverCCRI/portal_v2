@@ -1,6 +1,8 @@
+from enum import Enum
+
 from django.contrib.auth.models import AbstractUser
 from django.db import models
-from enum import Enum
+
 from portal.apps.mixins.models import AuditModelMixin, BaseModel
 from portal.apps.profiles.models import AerpawUserProfile
 
@@ -35,8 +37,7 @@ class AerpawUser(BaseModel, AuditModelMixin, AbstractUser):
     - last_name (from AbstractUser)
     - modified (from AuditModelMixin)
     - modified_by (from AuditModelMixin)
-    - oidc_email
-    - oidc_sub
+    - openid_sub
     - password (from AbstractUser)
     - profile
     - user_permissions (from AbstractUser)
@@ -45,15 +46,17 @@ class AerpawUser(BaseModel, AuditModelMixin, AbstractUser):
     """
     # add additional user fields
     display_name = models.CharField(max_length=255)
-    oidc_email = models.CharField(max_length=255)
-    oidc_sub = models.CharField(max_length=255)
+    openid_sub = models.CharField(max_length=255)
     profile = models.ForeignKey(
         AerpawUserProfile,
-        related_name='users_aerpawuser',
+        related_name='+',
         on_delete=models.CASCADE,
         null=True
     )
     uuid = models.CharField(max_length=255, primary_key=False, editable=False)
+
+    class Meta:
+        ordering = ['display_name']
 
     def __str__(self):
         return self.username

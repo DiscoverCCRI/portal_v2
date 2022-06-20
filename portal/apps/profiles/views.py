@@ -1,9 +1,12 @@
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+
 from portal.apps.users.api.viewsets import UserViewSet
 from portal.apps.users.oidc_users import get_tokens_for_user, refresh_access_token_for_user
 
 
+@csrf_exempt
 @login_required
 def profile(request):
     """
@@ -20,5 +23,11 @@ def profile(request):
             get_tokens_for_user(user)
         if request.POST.get('refresh_access_token'):
             refresh_access_token_for_user(user)
-
-    return render(request, 'profile.html', {'user': user, 'user_data': user_data.retrieve(request, pk=user.id).data})
+    print(user_data.tokens(request=request, pk=request.user.id).data)
+    return render(request,
+                  'profile.html',
+                  {
+                      'user': user,
+                      'user_data': user_data.retrieve(request=request, pk=request.user.id).data,
+                      'user_tokens': user_data.tokens(request=request, pk=request.user.id).data,
+                  })
