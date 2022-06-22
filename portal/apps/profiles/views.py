@@ -15,19 +15,23 @@ def profile(request):
     """
     user = request.user
     user_data = UserViewSet()
+    message = None
     if request.method == 'POST':
-        if request.POST.get('display_name') and len(request.POST.get('display_name')) >= 3:
-            request.data = {'display_name': request.POST.get('display_name')}
-            user_data.update(request, pk=user.id)
-        if request.POST.get('authorization_token'):
-            get_tokens_for_user(user)
-        if request.POST.get('refresh_access_token'):
-            refresh_access_token_for_user(user)
-    print(user_data.tokens(request=request, pk=request.user.id).data)
+        try:
+            if request.POST.get('display_name'):
+                request.data = {'display_name': request.POST.get('display_name')}
+                user_data.update(request, pk=user.id)
+            if request.POST.get('authorization_token'):
+                get_tokens_for_user(user)
+            if request.POST.get('refresh_access_token'):
+                refresh_access_token_for_user(user)
+        except Exception as exc:
+            message = exc
     return render(request,
                   'profile.html',
                   {
                       'user': user,
                       'user_data': user_data.retrieve(request=request, pk=request.user.id).data,
                       'user_tokens': user_data.tokens(request=request, pk=request.user.id).data,
+                      'message': message
                   })

@@ -26,6 +26,9 @@
 {% endblock %}
 
 {% block content %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
     {% if user.is_authenticated %}
         <div class="w-85">
             {% if user_data.is_active %}
@@ -66,7 +69,7 @@
                                 <span class="text-danger">No Roles Found</span>
                             {% endif %}
                             {% for role in user_data.aerpaw_roles %}
-                                <strong>{{ role.role }}</strong><br>
+                                <strong>{{ role }}</strong><br>
                             {% endfor %}
                             {% csrf_token %}
                             <input class="message-btn btn btn-success"
