@@ -19,7 +19,7 @@ from django.views.generic.base import TemplateView
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
-from portal.apps.projects.api.viewsets import ProjectViewSet
+from portal.apps.projects.api.viewsets import ProjectViewSet, UserProjectViewSet
 from portal.apps.users.api.viewsets import UserViewSet
 
 # Routers provide an easy way of automatically determining the URL conf.
@@ -27,6 +27,7 @@ from portal.apps.users.api.viewsets import UserViewSet
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r'users', UserViewSet, basename='users')
 router.register(r'projects', ProjectViewSet, basename='projects')
+router.register(r'user-project', UserProjectViewSet, basename='user-project')
 
 # Wire up our API using automatic URL routing.
 # Additionally, we include login URLs for the browsable API.

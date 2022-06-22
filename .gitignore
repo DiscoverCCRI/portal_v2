@@ -3,9 +3,10 @@
 # environment file
 .env
 
-# static and media directories
+# static, media and migrations directories
 portal/static
 portal/media
+portal/apps/*/migrations/
 
 # local data files
 db_data
