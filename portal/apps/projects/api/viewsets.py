@@ -1,15 +1,16 @@
-from django.db.models import Q
 from uuid import uuid4
 
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import permissions
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied, ValidationError, MethodNotAllowed
+from rest_framework.exceptions import MethodNotAllowed, PermissionDenied, ValidationError
 from rest_framework.mixins import ListModelMixin, RetrieveModelMixin, UpdateModelMixin
 from rest_framework.response import Response
+from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.viewsets import GenericViewSet
 
-from portal.apps.projects.api.serializers import ProjectSerializerList, ProjectSerializerDetail, UserProjectSerializer
+from portal.apps.projects.api.serializers import ProjectSerializerDetail, ProjectSerializerList, UserProjectSerializer
 from portal.apps.projects.models import AerpawProject, UserProject
 from portal.apps.users.models import AerpawUser
 
@@ -35,16 +36,13 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         search = self.request.query_params.get('search', None)
         if search:
             queryset = AerpawProject.objects.filter(
-                Q(name__icontains=search) &
-                (Q(is_public=True) |
-                 Q(project_personnel__email__in=[user.email]) |
-                 Q(project_creator=user))
+                Q(is_deleted=False, name__icontains=search) &
+                (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
             ).order_by('name')
         else:
             queryset = AerpawProject.objects.filter(
-                Q(is_public=True) |
-                Q(project_personnel__email__in=[user.email]) |
-                Q(project_creator=user)
+                Q(is_deleted=False) &
+                (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
             ).order_by('name')
         return queryset
 
@@ -100,18 +98,18 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         """
         user = get_object_or_404(AerpawUser.objects.all(), pk=request.user.id)
         if request.user.is_pi():
-            # validate name
-            name = request.data.get('name', None)
-            if not name or len(name) < PROJECT_MIN_NAME_LEN:
-                raise ValidationError(
-                    detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
             # validate description
             description = request.data.get('description', None)
             if not description or len(description) < PROJECT_MIN_DESC_LEN:
                 raise ValidationError(
                     detail="description:  must be at least {0} chars long".format(PROJECT_MIN_DESC_LEN))
-            # check is_pubic
+            # validate is_pubic
             is_public = str(request.data.get('is_public')).casefold() == 'true'
+            # validate name
+            name = request.data.get('name', None)
+            if not name or len(name) < PROJECT_MIN_NAME_LEN:
+                raise ValidationError(
+                    detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
             # create project
             project = AerpawProject()
             project.created_by = user.username
@@ -159,7 +157,6 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                 project.is_owner(request.user) or request.user.is_operator():
             serializer = ProjectSerializerDetail(project)
             du = dict(serializer.data)
-            print(du)
             project_members = []
             project_owners = []
             for p in du.get('project_personnel'):
@@ -176,7 +173,7 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                 'created_date': str(du.get('created_date')),
                 'description': du.get('description'),
                 'is_public': du.get('is_public'),
-                'last_modified_by': du.get('last_modified_by'),
+                'last_modified_by': AerpawUser.objects.get(username=du.get('last_modified_by')).id,
                 'modified_date': str(du.get('modified_date')),
                 'name': du.get('name'),
                 'project_creator': du.get('project_creator'),
@@ -184,6 +181,8 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                 'project_members': project_members,
                 'project_owners': project_owners
             }
+            if project.is_deleted:
+                response_data['is_deleted'] = du.get('is_deleted')
             return Response(response_data)
         else:
             raise PermissionDenied(
@@ -201,23 +200,30 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         - user is_project_owner
         """
         project = get_object_or_404(AerpawProject.objects.all(), pk=kwargs.get('pk'))
-        if project.is_creator(request.user) or project.is_owner(request.user):
-            print(request.data)
+        if not project.is_deleted and project.is_creator(request.user) or project.is_owner(request.user):
+            modified = False
             # check for description
             if request.data.get('description', None):
+                if len(request.data.get('description')) < PROJECT_MIN_DESC_LEN:
+                    raise ValidationError(
+                        detail="description:  must be at least {0} chars long".format(PROJECT_MIN_DESC_LEN))
                 project.description = request.data.get('description')
-                project.modified_by = request.user.email
-                project.save()
+                modified = True
             # check for is_public
             if str(request.data.get('is_public')).casefold() in ['true', 'false']:
                 is_public = str(request.data.get('is_public')).casefold() == 'true'
-                project.modified_by = request.user.email
                 project.is_public = is_public
-                project.save()
+                modified = True
             # check for name
             if request.data.get('name', None):
-                project.modified_by = request.user.email
+                if len(request.data.get('name')) < PROJECT_MIN_NAME_LEN:
+                    raise ValidationError(
+                        detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
                 project.name = request.data.get('name')
+                modified = True
+            # save if modified
+            if modified:
+                project.modified_by = request.user.email
                 project.save()
             return self.retrieve(request, pk=project.id)
         else:
@@ -239,17 +245,33 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
 
     def destroy(self, request, pk=None):
         """
-        DELETE: project cannot be deleted via the API
+        DELETE: soft delete existing project
+        - is_deleted             - bool
+
+        Permission:
+        - user is_project_creator
         """
-        raise PermissionDenied(detail="project deletion is not supported via API")
+        project = get_object_or_404(AerpawProject.objects.all(), pk=pk)
+        if project.is_creator(request.user):
+            project.is_deleted = True
+            project.modified_by = request.user.username
+            project.save()
+            return Response(status=HTTP_204_NO_CONTENT)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to DELETE /projects/{0}".format(pk))
 
     @action(detail=True, methods=['get'])
     def experiments(self, request, *args, **kwargs):
         """
         GET: experiments
+        - description            - string
+        - experiment_creator     - int
+        - experiment_id          - int
+        - experiment_state       - string
+        - is_canonical           - boolean
+        - is_retired             - boolean
         - name                   - string
-        - public_key_credential  - string
-        - public_key_id          - int
 
         Permission:
         - user is_project_creator

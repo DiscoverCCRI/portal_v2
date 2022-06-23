@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+
 from portal.apps.mixins.models import AuditModelMixin, BaseModel
 from portal.apps.profiles.models import AerpawUserProfile
 from portal.apps.users.models import AerpawUser
@@ -13,6 +14,7 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
     - created_by (from AuditModelMixin)
     - description
     - id (from Basemodel)
+    - is_deleted
     - is_public
     - modified (from AuditModelMixin)
     - modified_by (from AuditModelMixin)
@@ -22,6 +24,7 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
     - uuid
     """
     description = models.TextField()
+    is_deleted = models.BooleanField(default=False)
     is_public = models.BooleanField(default=False)
     name = models.CharField(max_length=255, blank=False, null=False)
     project_creator = models.ForeignKey(
@@ -64,6 +67,7 @@ class UserProject(BaseModel, models.Model):
     - project_role
     - user
     """
+
     class RoleType(models.TextChoices):
         PROJECT_MEMBER = 'project_member', _('Project Member')
         PROJECT_OWNER = 'project_owner', _('Project Owner')

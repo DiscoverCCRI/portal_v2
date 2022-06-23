@@ -30,5 +30,5 @@ class ProjectSerializerDetail(serializers.ModelSerializer):
 
     class Meta:
         model = AerpawProject
-        fields = ['created_date', 'description', 'is_public', 'last_modified_by', 'modified_date', 'name',
-                  'project_creator', 'project_id', 'project_personnel']
+        fields = ['created_date', 'description', 'is_deleted', 'is_public', 'last_modified_by', 'modified_date',
+                  'name', 'project_creator', 'project_id', 'project_personnel']
