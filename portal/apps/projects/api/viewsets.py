@@ -27,6 +27,7 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
     - create
     - update
     - delete
+    - experiments
     """
     permission_classes = [permissions.IsAuthenticated]
     queryset = AerpawProject.objects.all().order_by('name')
@@ -35,15 +36,21 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
     def get_project_queryset(self, user: AerpawUser):
         search = self.request.query_params.get('search', None)
         if search:
-            queryset = AerpawProject.objects.filter(
-                Q(is_deleted=False, name__icontains=search) &
-                (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
-            ).order_by('name')
+            if user.is_operator():
+                queryset = AerpawProject.objects.filter(is_deleted=False, name__icontains=search).order_by('name')
+            else:
+                queryset = AerpawProject.objects.filter(
+                    Q(is_deleted=False, name__icontains=search) &
+                    (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
+                ).order_by('name')
         else:
-            queryset = AerpawProject.objects.filter(
-                Q(is_deleted=False) &
-                (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
-            ).order_by('name')
+            if user.is_operator():
+                queryset = AerpawProject.objects.filter(is_deleted=False).order_by('name')
+            else:
+                queryset = AerpawProject.objects.filter(
+                    Q(is_deleted=False) &
+                    (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
+                ).order_by('name')
         return queryset
 
     def list(self, request, *args, **kwargs):

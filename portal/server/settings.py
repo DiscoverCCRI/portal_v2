@@ -45,10 +45,10 @@ INSTALLED_APPS = [
     'portal.apps.mixins',  # mixins
     'portal.apps.users',  # custom user model
     'portal.apps.profiles',  # custom user profile
-    'portal.apps.resources',
-    'portal.apps.projects',
-    'portal.apps.experiments',
-    'portal.apps.operations',
+    'portal.apps.resources',  # aerpaw resources
+    'portal.apps.projects',  # aerpaw projects
+    'portal.apps.experiments',  # aerpaw experiments
+    'portal.apps.operations',  # aerpaw operations
 ]
 
 # Add 'mozilla_django_oidc' authentication backend

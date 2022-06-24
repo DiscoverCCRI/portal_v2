@@ -28,7 +28,8 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
     is_public = models.BooleanField(default=False)
     name = models.CharField(max_length=255, blank=False, null=False)
     project_creator = models.ForeignKey(
-        AerpawUser, related_name='project_creator',
+        AerpawUser,
+        related_name='project_creator',
         on_delete=models.PROTECT
     )
     project_personnel = models.ManyToManyField(
