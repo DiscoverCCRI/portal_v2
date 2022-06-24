@@ -13,4 +13,6 @@ Phase-2 refactoring of [original AERPAW Portal](https://github.com/AERPAW-Platfo
 
 ## Table of Contents
 
-TODO
+- [Installation](./INSTALL.md)
+- [Usage](./USAGE.md)
+- [Documentation](./docs/README.md)
