@@ -106,11 +106,17 @@ Copy the `compose/local-docker-compose.yml` file to the main level of the reposi
 
 - The `local-docker-compose.yml` file will expose port 5432 of the database container to the host for the locally running Django services to access it (never do this on public machines)
 
-Expose the databse to the local host
+Expose the databse to the local host by updating the local `.env` file (from above) and then source it
 
 ```bash
 #export POSTGRES_HOST=portal-database  # <-- Comment this out
 export POSTGRES_HOST=127.0.0.1
+```
+
+Source the environment variables
+
+```
+source .env
 ```
 
 Create a virtual Python environment and install the required packages (your local path to Python may vary)
@@ -119,12 +125,6 @@ Create a virtual Python environment and install the required packages (your loca
 virtualenv -p /usr/local/bin/python3.10 venv
 source venv/bin/activate
 pip install -r requirements.txt
-```
-
-Source the local `.env` file (as configured from above)
-
-```
-source .env
 ```
 
 Pull in the Docker Postgres image
@@ -157,7 +157,7 @@ On completion you should observe the running site at: [http://127.0.0.1:8000/]()
 
 ![](docs/imgs/first-run.png)
 
-When finished used `ctrl-c` to stop the Django server and `docker compose stop` to stop the Postgres container
+When finished use `ctrl-c` to stop the Django server and `docker compose stop` to stop the Postgres container
 
 If you want to reset everything back to clean us the `reset-to-clean.sh` script (stops/removes all running containers and purges all data)
 
@@ -184,11 +184,13 @@ Going to remove portal-database
 
 ## DEVELOPMENT: Docker Django / Database / Nginx
 
-This is the preferred way to run the portal if simply wanting to interact with it.
+This is the preferred way to run the portal if simply wanting to interact with it remotely.
 
-Update the local `.env` file (as configured from above) and then source it
+Copy the `compose/public-docker-compose.yml` file to the main level of the repository as `docker-compose.yml`
 
-Expose the databse to the Docker network
+- The `public-docker-compose.yml` file will only expose port 8000 of the Nginx container to the host (HTTP web traffic). All other services will use the internal Docker network (Django, Postgres, etc.)
+
+Expose the databse to the Docker network by updating the local `.env` file (from above) and then source it
 
 ```bash
 export POSTGRES_HOST=portal-database
@@ -228,6 +230,15 @@ portal-nginx        "/docker-entrypoint.…"   nginx               running      
 On completion you should observe the running site at: [http://127.0.0.1:8000/]()
 
 ![](docs/imgs/first-run.png)
+
+When finished use `docker compose stop` to stop the running containers
+
+If you want to reset everything back to clean us the `reset-to-clean.sh` script (stops/removes all running containers and purges all data)
+
+```console
+cd scripts
+./reset-to-clean.sh
+```
 
 ## PRODUCTION: Docker Django / Database / Nginx
 
