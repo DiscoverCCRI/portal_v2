@@ -27,11 +27,11 @@ Replace the following variables
 - `OIDC_RP_CLIENT_SECRET='xxxxx'`: speak with RENCI to get the `client_secret`
 - `POSTGRES_PASSWORD=xxxxx`: create your own password
 
-Ensure the Postgres database host is exposed via `127.0.0.1`
+Ensure you are familiar with how the Postgres database host is exposed via `portal-database` or `127.0.0.1` (choose only **one**)
 
-```
-#export POSTGRES_HOST=portal-database
-export POSTGRES_HOST=127.0.0.1
+```bash
+export POSTGRES_HOST=portal-database  # <-- Django run in Docker
+export POSTGRES_HOST=127.0.0.1        # <-- Django run locally
 ```
 
 ### File: `.env`
@@ -105,6 +105,13 @@ This is the preferred way to run the portal for code development purposes.
 Copy the `compose/local-docker-compose.yml` file to the main level of the repository as `docker-compose.yml`
 
 - The `local-docker-compose.yml` file will expose port 5432 of the database container to the host for the locally running Django services to access it (never do this on public machines)
+
+Expose the databse to the local host
+
+```bash
+#export POSTGRES_HOST=portal-database  # <-- Comment this out
+export POSTGRES_HOST=127.0.0.1
+```
 
 Create a virtual Python environment and install the required packages (your local path to Python may vary)
 
@@ -181,14 +188,14 @@ This is the preferred way to run the portal if simply wanting to interact with i
 
 Update the local `.env` file (as configured from above) and then source it
 
-Update: expose the Docker Postgres host (`database`)
+Expose the databse to the Docker network
 
 ```bash
 export POSTGRES_HOST=portal-database
-#export POSTGRES_HOST=127.0.0.1
+#export POSTGRES_HOST=127.0.0.1        # <-- Comment this out
 ```
 
-Source:
+Source the environment variables
 
 ```
 source .env
