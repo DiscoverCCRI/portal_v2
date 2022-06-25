@@ -101,7 +101,7 @@ This can then be used to interact with the portal's API interface to perform var
 
 Get user information:
 
-``console
+```console
 $ curl -s -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: application/json" "http://127.0.0.1:8000/api/users" | jq .
 {
   "count": 1,
@@ -120,7 +120,7 @@ $ curl -s -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: applic
 
 Get detailed user information:
 
-```
+```console
 $ curl -s -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: application/json" "http://127.0.0.1:8000/api/users/1" | jq .
 {
   "aerpaw_roles": [
