@@ -20,7 +20,8 @@ from django.views.generic.base import TemplateView
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
-from portal.apps.experiments.api.viewsets import ExperimentViewSet, UserExperimentViewSet, ExperimentSessionViewSet
+from portal.apps.experiments.api.viewsets import CanonicalExperimentResourceViewSet, ExperimentSessionViewSet, \
+    ExperimentViewSet, UserExperimentViewSet
 from portal.apps.operations.api.viewsets import CanonicalNumberViewSet
 from portal.apps.projects.api.viewsets import ProjectViewSet, UserProjectViewSet
 from portal.apps.resources.api.viewsets import ResourceViewSet
@@ -29,6 +30,8 @@ from portal.apps.users.api.viewsets import UserViewSet
 # Routers provide an easy way of automatically determining the URL conf.
 # Ordering is important for overloaded API slugs with differing ViewSet definitions
 router = routers.DefaultRouter(trailing_slash=False)
+router.register(r'canonical-experiment-resource', CanonicalExperimentResourceViewSet,
+                basename='canonical-experiment-resource')
 router.register(r'canonical-number', CanonicalNumberViewSet, basename='canonical-number')
 router.register(r'experiment-session', ExperimentSessionViewSet, basename='experiment-session')
 router.register(r'experiments', ExperimentViewSet, basename='experiments')

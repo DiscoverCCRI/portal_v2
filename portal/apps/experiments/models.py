@@ -154,3 +154,63 @@ class ExperimentSession(BaseModel, BaseTimestampModel, models.Model):
         on_delete=models.PROTECT
     )
     uuid = models.CharField(max_length=255, primary_key=False, editable=False)
+
+
+class CanonicalExperimentResource(BaseModel, BaseTimestampModel, models.Model):
+    """
+    Canonical Experiment Resource
+    - created (from BaseTimestampModel)
+    - experiment
+    - experiment_node_number
+    - id (from Basemodel)
+    - modified (from BaseTimestampModel)
+    - node_type
+    - node_uhd
+    - node_vehicle
+    - resource
+    - uuid
+    """
+
+    class NodeType(models.TextChoices):
+        AFRN = 'afrn', _('AFRN')
+        APRN = 'aprn', _('APRN')
+
+    class NodeUhd(models.TextChoices):
+        ONE_THREE_THREE = '1.3.3', _('1.3.3')
+        ONE_FOUR = '1.4', _('1.4')
+
+    class NodeVehicle(models.TextChoices):
+        VEHICLE_UAV = 'vehicle_uav', _('Vehicle UAV')
+        VEHICLE_UGV = 'vehicle_ugv', _('Vehicle UGV')
+        VEHICLE_OTHER = 'vehicle_other', _('Vehicle Other')
+        VEHICLE_NONE = 'vehicle_none', _('Vehicle None')
+
+    experiment = models.ForeignKey(
+        AerpawExperiment,
+        related_name='cer_experiment',
+        on_delete=models.PROTECT
+    )
+    experiment_node_number = models.IntegerField(default=1)
+    node_type = models.CharField(
+        max_length=255,
+        choices=NodeType.choices,
+        default=NodeType.AFRN
+    )
+    node_uhd = models.CharField(
+        max_length=255,
+        choices=NodeUhd.choices,
+        default=NodeUhd.ONE_THREE_THREE
+    )
+    node_vehicle = models.CharField(
+        max_length=255,
+        choices=NodeVehicle.choices,
+        default=NodeVehicle.VEHICLE_NONE
+    )
+    resource = models.ForeignKey(
+        AerpawResource,
+        related_name='cer_resource',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True
+    )
+    uuid = models.CharField(max_length=255, primary_key=False, editable=False)

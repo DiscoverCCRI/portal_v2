@@ -10,9 +10,10 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.viewsets import GenericViewSet
 
-from portal.apps.experiments.api.serializers import ExperimentSerializerDetail, ExperimentSerializerList, \
-    ExperimentSessionSerializer, UserExperimentSerializer
-from portal.apps.experiments.models import AerpawExperiment, ExperimentSession, UserExperiment
+from portal.apps.experiments.api.serializers import CanonicalExperimentResourceSerializer, ExperimentSerializerDetail, \
+    ExperimentSerializerList, ExperimentSessionSerializer, UserExperimentSerializer
+from portal.apps.experiments.models import AerpawExperiment, CanonicalExperimentResource, ExperimentSession, \
+    UserExperiment
 from portal.apps.operations.models import CanonicalNumber, get_current_canonical_number, \
     increment_current_canonical_number
 from portal.apps.projects.models import AerpawProject
@@ -652,3 +653,169 @@ class ExperimentSessionViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixi
         - user is_operator
         """
         raise MethodNotAllowed(method="DELETE: /experiment-session/{int:pk}")
+
+
+class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
+    """
+    Experiment Session
+    - paginated list
+    - retrieve one
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = CanonicalExperimentResource.objects.all().order_by('-created').distinct()
+    serializer_class = CanonicalExperimentResourceSerializer
+
+    def get_queryset(self):
+        experiment_id = self.request.query_params.get('experiment_id', None)
+        resource_id = self.request.query_params.get('resource_id', None)
+        if experiment_id and resource_id:
+            queryset = CanonicalExperimentResource.objects.filter(
+                experiment__id=experiment_id,
+                resource__id=resource_id
+            ).order_by('-created').distinct()
+        elif experiment_id:
+            queryset = CanonicalExperimentResource.objects.filter(
+                experiment__id=experiment_id
+            ).order_by('-created').distinct()
+        elif resource_id:
+            queryset = CanonicalExperimentResource.objects.filter(
+                resource__id=resource_id
+            ).order_by('-created').distinct()
+        else:
+            queryset = CanonicalExperimentResource.objects.filter().order_by('-created').distinct()
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        GET: list canonical-experiment-resource as paginated results
+        - canonical_experiment_resource_id - int
+        - experiment_id (fk)               - int
+        - experiment_node_number           - int
+        - node_type                        - string
+        - node_uhd                         - string
+        - node_vehicle                     - string
+        - resource_id (fk)                 - int
+
+        Permission:
+        - user is_operator
+        """
+        if request.user.is_operator():
+            page = self.paginate_queryset(self.get_queryset())
+            if page:
+                serializer = CanonicalExperimentResourceSerializer(page, many=True)
+            else:
+                serializer = CanonicalExperimentResourceSerializer(self.get_queryset(), many=True)
+            response_data = []
+            for u in serializer.data:
+                du = dict(u)
+                response_data.append(
+                    {
+                        'canonical_experiment_resource_id': du.get('canonical_experiment_resource_id'),
+                        'experiment_id': du.get('experiment_id'),
+                        'experiment_node_number': du.get('experiment_node_number'),
+                        'node_type': du.get('node_type'),
+                        'node_uhd': du.get('node_uhd'),
+                        'node_vehicle': du.get('node_vehicle'),
+                        'resource_id': du.get('resource_id')
+                    }
+                )
+            if page:
+                return self.get_paginated_response(response_data)
+            else:
+                return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /canonical-experiment-resource list")
+
+    def create(self, request):
+        """
+        POST: create a new canonical-experiment-resource
+        - experiment_id (fk)      - int
+        - experiment_node_number  - int
+        - node_type               - string
+        - node_uhd                - string
+        - node_vehicle            - string
+        - resource_id (fk)        - int
+
+        Permission:
+        - user is_operator
+        """
+        raise MethodNotAllowed(method="POST: /canonical-experiment-resource")
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        GET: retrieve canonical-experiment-resource as detailed result
+        - canonical_experiment_resource_id - int
+        - experiment_id (fk)               - int
+        - experiment_node_number           - int
+        - node_type                        - string
+        - node_uhd                         - string
+        - node_vehicle                     - string
+        - resource_id (fk)                 - int
+
+        Permission:
+        - user is_operator
+        """
+        canonical_experiment_resource = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if request.user.is_operator():
+            serializer = ExperimentSessionSerializer(canonical_experiment_resource)
+            du = dict(serializer.data)
+            response_data = {
+                'canonical_experiment_resource_id': du.get('canonical_experiment_resource_id'),
+                'experiment_id': du.get('experiment_id'),
+                'experiment_node_number': du.get('experiment_node_number'),
+                'node_type': du.get('node_type'),
+                'node_uhd': du.get('node_uhd'),
+                'node_vehicle': du.get('node_vehicle'),
+                'resource_id': du.get('resource_id')
+            }
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /canonical-experiment-resource/{0} details".format(
+                    kwargs.get('pk')))
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT: update an existing canonical-experiment-resource
+        - experiment_id (fk)      - int
+        - experiment_node_number  - int
+        - node_type               - string
+        - node_uhd                - string
+        - node_vehicle            - string
+        - resource_id (fk)        - int
+
+        Permission:
+        - user is_operator
+        """
+        raise MethodNotAllowed(method="PUT/PATCH: /canonical-experiment-resource/{int:pk}")
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH: update an existing canonical-experiment-resource
+        - experiment_id (fk)      - int
+        - experiment_node_number  - int
+        - node_type               - string
+        - node_uhd                - string
+        - node_vehicle            - string
+        - resource_id (fk)        - int
+
+        Permission:
+        - user is_operator
+        """
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, pk=None):
+        """
+        DELETE: remove an existing canonical-experiment-resource
+        - experiment_id (fk)      - int
+        - experiment_node_number  - int
+        - node_type               - string
+        - node_uhd                - string
+        - node_vehicle            - string
+        - resource_id (fk)        - int
+
+        Permission:
+        - user is_operator
+        """
+        raise MethodNotAllowed(method="DELETE: /canonical-experiment-resource/{int:pk}")
