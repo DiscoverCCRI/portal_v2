@@ -14,7 +14,8 @@ from portal.apps.experiments.api.serializers import ExperimentSerializerList, Ex
 from portal.apps.experiments.models import AerpawExperiment, UserExperiment
 from portal.apps.users.models import AerpawUser
 from portal.apps.projects.models import AerpawProject
-from portal.apps.operations.models import CanonicalNumber, get_current_canonical_number, increment_current_canonical_number
+from portal.apps.operations.models import CanonicalNumber, get_current_canonical_number, \
+    increment_current_canonical_number
 
 # constants
 EXPERIMENT_MIN_NAME_LEN = 5
@@ -32,7 +33,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
     - resources
     """
     permission_classes = [permissions.IsAuthenticated]
-    queryset = AerpawExperiment.objects.all().order_by('name')
+    queryset = AerpawExperiment.objects.all().order_by('name').distinct()
     serializer_class = ExperimentSerializerDetail
 
     def get_queryset(self):
@@ -40,20 +41,21 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         user = self.request.user
         if search:
             if user.is_operator():
-                queryset = AerpawExperiment.objects.filter(is_deleted=False, name__icontains=search).order_by('name')
+                queryset = AerpawExperiment.objects.filter(
+                    is_deleted=False, name__icontains=search).order_by('name').distinct()
             else:
                 queryset = AerpawExperiment.objects.filter(
                     Q(is_deleted=False, name__icontains=search) &
-                    (Q(project__project_personnel__email__in=[user.email]) | Q(project__project_creator=user))
-                ).order_by('name')
+                    (Q(project__project_membership__email__in=[user.email]) | Q(project__project_creator=user))
+                ).order_by('name').distinct()
         else:
             if user.is_operator():
-                queryset = AerpawExperiment.objects.filter(is_deleted=False).order_by('name')
+                queryset = AerpawExperiment.objects.filter(is_deleted=False).order_by('name').distinct()
             else:
                 queryset = AerpawExperiment.objects.filter(
                     Q(is_deleted=False) &
-                    (Q(project__project_personnel__email__in=[user.email]) | Q(project__project_creator=user))
-                ).order_by('name')
+                    (Q(project__project_membership__email__in=[user.email]) | Q(project__project_creator=user))
+                ).order_by('name').distinct()
         return queryset
 
     def list(self, request, *args, **kwargs):
@@ -70,8 +72,8 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - name                   - string
 
         Permission:
-        - user is_experiment_project_personnel
-        - user is_experiment_project_creator
+        - user is_experiment_project_member OR
+        - user is_experiment_project_creator OR
         - user is_operator
         """
         if request.user.is_active:
@@ -105,28 +107,25 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
 
     def create(self, request):
         """
-        POST: create a new experiment
+        POST: create a new experiment (* = required fields)
         - canonical_number       - int
         - created_date           - string
-        - description            - string
+        - description *          - string
         - experiment_creator     - int
         - experiment_id          - int
-        - experiment_members     - array of int
+        - experiment_membership  - array of user-experiment
         - experiment_state       - string
         - is_canonical           - boolean
         - is_retired             - boolean
-        - name                   - string
-        - project_id             - int
+        - name *                 - string
+        - project_id *           - int
         - resources              - array of int
 
-        - description            - string
-        - is_public              - bool
-        - name                   - string
-
         Permission:
-        - user is_project_creator
-        - user is_project_member
-        - user is_project_owner
+        - user is_experimenter AND
+            - user is_project_creator OR
+            - user is_project_member OR
+            - user is_project_owner
         """
         try:
             project_id = request.data.get('project_id', None)
@@ -138,19 +137,12 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         except Exception as exc:
             raise ValidationError(
                 detail="ValidationError: {0}".format(exc))
-        if project.is_creator(user) or project.is_member(user) or project.is_owner(user):
+        if user.is_experimenter() and (project.is_creator(user) or project.is_member(user) or project.is_owner(user)):
             # validate description
             description = request.data.get('description', None)
             if not description or len(description) < EXPERIMENT_MIN_DESC_LEN:
                 raise ValidationError(
                     detail="description:  must be at least {0} chars long".format(EXPERIMENT_MIN_DESC_LEN))
-            # validate experiment_state
-            experiment_state = request.data.get('experiment_state', None)
-            if experiment_state not in [c[0] for c in AerpawExperiment.ExperimentState.choices]:
-                raise ValidationError(
-                    detail="experiment_state: invalid value for experiment_state")
-            # validate is_canonical
-            is_canonical = str(request.data.get('is_canonical')).casefold() == 'true'
             # validate name
             name = request.data.get('name', None)
             if not name or len(name) < EXPERIMENT_MIN_NAME_LEN:
@@ -161,9 +153,6 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
             experiment.created_by = user.username
             experiment.experiment_creator = user
             experiment.description = description
-            experiment.experiment_state = experiment_state
-            # TODO: update how is_canonical is determined
-            experiment.is_canonical = is_canonical
             experiment.modified_by = user.username
             experiment.name = name
             experiment.project = project
@@ -175,12 +164,12 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
             canonical_number.save()
             experiment.canonical_number = canonical_number
             experiment.save()
-            # set creator as project_owner
-            members = UserExperiment()
-            members.granted_by = user
-            members.experiment = experiment
-            members.user = user
-            members.save()
+            # set creator as experiment member
+            membership = UserExperiment()
+            membership.granted_by = user
+            membership.experiment = experiment
+            membership.user = user
+            membership.save()
             return self.retrieve(request, pk=experiment.id)
         else:
             raise PermissionDenied(
@@ -194,7 +183,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - description            - string
         - experiment_creator     - int
         - experiment_id          - int
-        - experiment_members     - array of int
+        - experiment_membership  - array of user-experiment
         - experiment_state       - string
         - is_canonical           - boolean
         - is_retired             - boolean
@@ -203,9 +192,9 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - resources              - array of int
 
         Permission:
-        - user is_creator
-        - user is_project_member
-        - user is_project_owner
+        - user is_creator OR
+        - user is_project_member OR
+        - user is_project_owner OR
         - user is_operator
         """
         experiment = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
@@ -214,21 +203,21 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                 project.is_owner(request.user) or request.user.is_operator():
             serializer = ExperimentSerializerDetail(experiment)
             du = dict(serializer.data)
-            experiment_members = []
-            for p in du.get('experiment_members'):
+            experiment_membership = []
+            for p in du.get('experiment_membership'):
                 person = {
                     'granted_by': p.get('granted_by'),
                     'granted_date': str(p.get('granted_date')),
                     'user_id': p.get('user_id')
                 }
-                experiment_members.append(person)
+                experiment_membership.append(person)
             response_data = {
                 'canonical_number': du.get('canonical_number'),
                 'created_date': du.get('created_date'),
                 'description': du.get('description'),
                 'experiment_creator': du.get('experiment_creator'),
                 'experiment_id': du.get('experiment_id'),
-                'experiment_members': experiment_members,
+                'experiment_members': experiment_membership,
                 'experiment_state': du.get('experiment_state'),
                 'is_canonical': du.get('is_canonical'),
                 'is_retired': du.get('is_retired'),
@@ -245,106 +234,133 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
             raise PermissionDenied(
                 detail="PermissionDenied: unable to GET /experiments/{0} details".format(kwargs.get('pk')))
 
-    # def update(self, request, *args, **kwargs):
-    #     """
-    #     PUT: update existing project
-    #     - description            - string
-    #     - is_public              - bool
-    #     - name                   - string
-    #
-    #     Permission:
-    #     - user is_project_creator
-    #     - user is_project_owner
-    #     """
-    #     project = get_object_or_404(AerpawProject.objects.all(), pk=kwargs.get('pk'))
-    #     if not project.is_deleted and project.is_creator(request.user) or project.is_owner(request.user):
-    #         modified = False
-    #         # check for description
-    #         if request.data.get('description', None):
-    #             if len(request.data.get('description')) < PROJECT_MIN_DESC_LEN:
-    #                 raise ValidationError(
-    #                     detail="description:  must be at least {0} chars long".format(PROJECT_MIN_DESC_LEN))
-    #             project.description = request.data.get('description')
-    #             modified = True
-    #         # check for is_public
-    #         if str(request.data.get('is_public')).casefold() in ['true', 'false']:
-    #             is_public = str(request.data.get('is_public')).casefold() == 'true'
-    #             project.is_public = is_public
-    #             modified = True
-    #         # check for name
-    #         if request.data.get('name', None):
-    #             if len(request.data.get('name')) < PROJECT_MIN_NAME_LEN:
-    #                 raise ValidationError(
-    #                     detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
-    #             project.name = request.data.get('name')
-    #             modified = True
-    #         # save if modified
-    #         if modified:
-    #             project.modified_by = request.user.email
-    #             project.save()
-    #         return self.retrieve(request, pk=project.id)
-    #     else:
-    #         raise PermissionDenied(
-    #             detail="PermissionDenied: unable to PUT/PATCH /projects/{0} details".format(kwargs.get('pk')))
-    #
-    # def partial_update(self, request, *args, **kwargs):
-    #     """
-    #     PATCH: update existing project
-    #     - description            - string
-    #     - is_public              - bool
-    #     - name                   - string
-    #
-    #     Permission:
-    #     - user is_project_creator
-    #     - user is_project_owner
-    #     """
-    #     return self.update(request, *args, **kwargs)
-    #
-    # def destroy(self, request, pk=None):
-    #     """
-    #     DELETE: soft delete existing project
-    #     - is_deleted             - bool
-    #
-    #     Permission:
-    #     - user is_project_creator
-    #     """
-    #     project = get_object_or_404(AerpawProject.objects.all(), pk=pk)
-    #     if project.is_creator(request.user):
-    #         project.is_deleted = True
-    #         project.modified_by = request.user.username
-    #         project.save()
-    #         return Response(status=HTTP_204_NO_CONTENT)
-    #     else:
-    #         raise PermissionDenied(
-    #             detail="PermissionDenied: unable to DELETE /projects/{0}".format(pk))
-    #
-    # @action(detail=True, methods=['get'])
-    # def experiments(self, request, *args, **kwargs):
-    #     """
-    #     GET: experiments
-    #     - description            - string
-    #     - experiment_creator     - int
-    #     - experiment_id          - int
-    #     - experiment_state       - string
-    #     - is_canonical           - boolean
-    #     - is_retired             - boolean
-    #     - name                   - string
-    #
-    #     Permission:
-    #     - user is_project_creator
-    #     - user is_project_member
-    #     - user is_project_owner
-    #     - user is_operator
-    #     """
-    #     project = get_object_or_404(AerpawProject.objects.all(), pk=kwargs.get('pk'))
-    #     if project.is_creator(request.user) or project.is_member(request.user) or \
-    #             project.is_owner(request.user) or request.user.is_operator():
-    #         # TODO: experiments serializer and response
-    #         response_data = {}
-    #         return Response(response_data)
-    #     else:
-    #         raise PermissionDenied(
-    #             detail="PermissionDenied: unable to GET /projects/{0}/experiments".format(kwargs.get('pk')))
+    def update(self, request, *args, **kwargs):
+        """
+        PUT: update an existing experiment
+        - description            - string
+        - is_retired             - boolean
+        - name                   - string
+
+        Permission:
+        - user is_experiment_creator OR
+        - user is_experiment_member
+        """
+        experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
+        if not experiment.is_deleted and request.user is experiment.experiment_creator or \
+                request.user in experiment.experiment_membership:
+            modified = False
+            # check for description
+            if request.data.get('description', None):
+                if len(request.data.get('description')) < EXPERIMENT_MIN_DESC_LEN:
+                    raise ValidationError(
+                        detail="description:  must be at least {0} chars long".format(EXPERIMENT_MIN_DESC_LEN))
+                experiment.description = request.data.get('description')
+                modified = True
+            # check for is_retired
+            if str(request.data.get('is_retired')).casefold() in ['true', 'false']:
+                is_retired = str(request.data.get('is_retired')).casefold() == 'true'
+                experiment.is_retired = is_retired
+                modified = True
+            # check for name
+            if request.data.get('name', None):
+                if len(request.data.get('name')) < EXPERIMENT_MIN_NAME_LEN:
+                    raise ValidationError(
+                        detail="name: must be at least {0} chars long".format(EXPERIMENT_MIN_NAME_LEN))
+                experiment.name = request.data.get('name')
+                modified = True
+            # save if modified
+            if modified:
+                experiment.modified_by = request.user.email
+                experiment.save()
+            return self.retrieve(request, pk=experiment.id)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to PUT/PATCH /experiments/{0} details".format(kwargs.get('pk')))
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH: update an existing experiment
+        - description            - string
+        - is_retired             - boolean
+        - name                   - string
+
+        Permission:
+        - user is_experiment_creator OR
+        - user is_experiment_member
+        """
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, pk=None):
+        """
+        DELETE: soft delete existing project
+        - is_deleted             - bool
+        - is_retired             - bool
+
+        Permission:
+        - user is_experiment_creator OR
+        - user is_experiment_member
+        """
+        experiment = get_object_or_404(self.get_queryset(), pk=pk)
+        if request.user is experiment.experiment_creator or request.user in experiment.experiment_membership:
+            experiment.is_deleted = True
+            experiment.is_retired = True
+            experiment.modified_by = request.user.username
+            experiment.save()
+            return Response(status=HTTP_204_NO_CONTENT)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to DELETE /experiments/{0}".format(pk))
+
+    @action(detail=True, methods=['get', 'put', 'patch'])
+    def membership(self, request, *args, **kwargs):
+        """
+        GET, PUT, PATCH: list / update experiment members
+        - experiment_membership  - array of user-experiment
+
+        Permission:
+        - user is_experiment_creator OR
+        - user is_experiment_member
+        """
+        experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
+        if experiment.is_creator(request.user) or experiment.is_member(request.user):
+            if str(request.method).casefold() in ['put', 'patch']:
+                experiment_members = request.data.get('experiment_members')
+                if isinstance(experiment_members, list) and all([isinstance(item, int) for item in experiment_members]):
+                    experiment_members_orig = UserExperiment.objects.filter(
+                        experiment__id=experiment.id
+                    ).values_list('user__id', flat=True)
+                    experiment_members_added = list(set(experiment_members).difference(set(experiment_members_orig)))
+                    experiment_members_removed = list(set(experiment_members_orig).difference(set(experiment_members)))
+                    for pk in experiment_members_added:
+                        if AerpawUser.objects.filter(pk=pk).exists():
+                            user = AerpawUser.objects.get(pk=pk)
+                            membership = UserExperiment()
+                            membership.granted_by = request.user
+                            membership.experiment = experiment
+                            membership.user = user
+                            membership.save()
+                    for pk in experiment_members_removed:
+                        membership = UserExperiment.objects.get(
+                            experiment__id=experiment.id, user__id=pk)
+                        membership.delete()
+            # End of PUT, PATCH section - All reqeust types return membership
+            serializer = ExperimentSerializerDetail(experiment)
+            du = dict(serializer.data)
+            experiment_membership = []
+            for p in du.get('experiment_membership'):
+                person = {
+                    'granted_by': p.get('granted_by'),
+                    'granted_date': str(p.get('granted_date')),
+                    'user_id': p.get('user_id')
+                }
+                experiment_membership.append(person)
+            response_data = {
+                'experiment_membership': experiment_membership
+            }
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET,PUT,PATCH /experiments/{0}/membership".format(kwargs.get('pk')))
 
 
 # class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
@@ -470,3 +486,10 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
 #         DELETE: user-project cannot be deleted via the API
 #         """
 #         raise MethodNotAllowed(method="DELETE: /user-project/{user_id}")
+
+
+    #         # validate experiment_state
+    #         experiment_state = request.data.get('experiment_state', None)
+    #         if experiment_state not in [c[0] for c in AerpawExperiment.ExperimentState.choices]:
+    #             raise ValidationError(
+    #                 detail="experiment_state: invalid value for experiment_state")

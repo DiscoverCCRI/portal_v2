@@ -112,6 +112,16 @@ class UserViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateMode
                 'username': du.get('username')
             }
             return Response(response_data)
+        elif request.user.is_active:
+            serializer = UserSerializerDetail(user)
+            du = dict(serializer.data)
+            response_data = {
+                'display_name': du.get('display_name'),
+                'email': du.get('email'),
+                'user_id': du.get('user_id'),
+                'username': du.get('username')
+            }
+            return Response(response_data)
         else:
             raise PermissionDenied(
                 detail="PermissionDenied: unable to GET /users/{0} details".format(kwargs.get('pk')))

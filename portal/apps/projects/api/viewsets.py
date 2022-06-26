@@ -13,6 +13,8 @@ from rest_framework.viewsets import GenericViewSet
 from portal.apps.projects.api.serializers import ProjectSerializerDetail, ProjectSerializerList, UserProjectSerializer
 from portal.apps.projects.models import AerpawProject, UserProject
 from portal.apps.users.models import AerpawUser
+from portal.apps.experiments.api.serializers import ExperimentSerializerDetail
+from portal.apps.experiments.models import AerpawExperiment
 
 # constants
 PROJECT_MIN_NAME_LEN = 5
@@ -30,27 +32,29 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
     - experiments
     """
     permission_classes = [permissions.IsAuthenticated]
-    queryset = AerpawProject.objects.all().order_by('name')
+    queryset = AerpawProject.objects.all().order_by('name').distinct()
     serializer_class = ProjectSerializerList
 
-    def get_project_queryset(self, user: AerpawUser):
+    def get_queryset(self):
         search = self.request.query_params.get('search', None)
+        user = self.request.user
         if search:
             if user.is_operator():
-                queryset = AerpawProject.objects.filter(is_deleted=False, name__icontains=search).order_by('name')
+                queryset = AerpawProject.objects.filter(
+                    is_deleted=False, name__icontains=search).order_by('name').distinct()
             else:
                 queryset = AerpawProject.objects.filter(
                     Q(is_deleted=False, name__icontains=search) &
-                    (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
-                ).order_by('name')
+                    (Q(is_public=True) | Q(project_membership__email__in=[user.email]) | Q(project_creator=user))
+                ).order_by('name').distinct()
         else:
             if user.is_operator():
-                queryset = AerpawProject.objects.filter(is_deleted=False).order_by('name')
+                queryset = AerpawProject.objects.filter(is_deleted=False).order_by('name').distinct()
             else:
                 queryset = AerpawProject.objects.filter(
                     Q(is_deleted=False) &
-                    (Q(is_public=True) | Q(project_personnel__email__in=[user.email]) | Q(project_creator=user))
-                ).order_by('name')
+                    (Q(is_public=True) | Q(project_membership__email__in=[user.email]) | Q(project_creator=user))
+                ).order_by('name').distinct()
         return queryset
 
     def list(self, request, *args, **kwargs):
@@ -67,11 +71,11 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         - active users
         """
         if request.user.is_active:
-            page = self.paginate_queryset(self.get_project_queryset(request.user))
+            page = self.paginate_queryset(self.get_queryset())
             if page:
                 serializer = ProjectSerializerList(page, many=True)
             else:
-                serializer = ProjectSerializerList(self.get_project_queryset(request.user), many=True)
+                serializer = ProjectSerializerList(self.get_queryset(), many=True)
             response_data = []
             for u in serializer.data:
                 du = dict(u)
@@ -128,12 +132,12 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
             project.uuid = uuid4()
             project.save()
             # set creator as project_owner
-            personnel = UserProject()
-            personnel.granted_by = user
-            personnel.project = project
-            personnel.project_role = UserProject.RoleType.PROJECT_OWNER
-            personnel.user = user
-            personnel.save()
+            membership = UserProject()
+            membership.granted_by = user
+            membership.project = project
+            membership.project_role = UserProject.RoleType.PROJECT_OWNER
+            membership.user = user
+            membership.save()
             return self.retrieve(request, pk=project.id)
         else:
             raise PermissionDenied(
@@ -154,9 +158,9 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         - project_owners (fk)    - array of integer
 
         Permission:
-        - user is_creator
-        - user is_project_member
-        - user is_project_owner
+        - user is_creator OR
+        - user is_project_member OR
+        - user is_project_owner OR
         - user is_operator
         """
         project = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
@@ -166,7 +170,7 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
             du = dict(serializer.data)
             project_members = []
             project_owners = []
-            for p in du.get('project_personnel'):
+            for p in du.get('project_membership'):
                 person = {
                     'granted_by': p.get('granted_by'),
                     'granted_date': str(p.get('granted_date')),
@@ -191,6 +195,21 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
             if project.is_deleted:
                 response_data['is_deleted'] = du.get('is_deleted')
             return Response(response_data)
+        elif request.user.is_active:
+            if project.is_public:
+                serializer = ProjectSerializerDetail(project)
+                du = dict(serializer.data)
+                response_data = {
+                    'created_date': du.get('created_date'),
+                    'description': du.get('description'),
+                    'is_public': du.get('is_public'),
+                    'name': du.get('name'),
+                    'project_creator': du.get('project_creator'),
+                    'project_id': du.get('project_id')
+                }
+            else:
+                response_data = {}
+            return Response(response_data)
         else:
             raise PermissionDenied(
                 detail="PermissionDenied: unable to GET /projects/{0} details".format(kwargs.get('pk')))
@@ -203,11 +222,11 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         - name                   - string
 
         Permission:
-        - user is_project_creator
+        - user is_project_creator OR
         - user is_project_owner
         """
-        project = get_object_or_404(AerpawProject.objects.all(), pk=kwargs.get('pk'))
-        if not project.is_deleted and project.is_creator(request.user) or project.is_owner(request.user):
+        project = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if not project.is_deleted and (project.is_creator(request.user) or project.is_owner(request.user)):
             modified = False
             # check for description
             if request.data.get('description', None):
@@ -258,7 +277,7 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         Permission:
         - user is_project_creator
         """
-        project = get_object_or_404(AerpawProject.objects.all(), pk=pk)
+        project = get_object_or_404(self.queryset, pk=pk)
         if project.is_creator(request.user):
             project.is_deleted = True
             project.modified_by = request.user.username
@@ -271,9 +290,11 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
     @action(detail=True, methods=['get'])
     def experiments(self, request, *args, **kwargs):
         """
-        GET: experiments
+        GET: list experiments as paginated results
+        - canonical_number       - int
+        - created_date           - string
         - description            - string
-        - experiment_creator     - int
+        - experiment_creator     - user_ID
         - experiment_id          - int
         - experiment_state       - string
         - is_canonical           - boolean
@@ -281,20 +302,115 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         - name                   - string
 
         Permission:
-        - user is_project_creator
-        - user is_project_member
-        - user is_project_owner
+        - user is_project_creator OR
+        - user is_project_member OR
+        - user is_project_owner OR
         - user is_operator
         """
         project = get_object_or_404(AerpawProject.objects.all(), pk=kwargs.get('pk'))
         if project.is_creator(request.user) or project.is_member(request.user) or \
                 project.is_owner(request.user) or request.user.is_operator():
-            # TODO: experiments serializer and response
-            response_data = {}
+            experiments = AerpawExperiment.objects.filter(project__id=project.id).order_by('name').distinct()
+            serializer = ExperimentSerializerDetail(experiments, many=True)
+            response_data = []
+            for u in serializer.data:
+                du = dict(u)
+                response_data.append(
+                    {
+                        'canonical_number': du.get('canonical_number'),
+                        'created_date': du.get('created_date'),
+                        'description': du.get('description'),
+                        'experiment_creator': du.get('experiment_creator'),
+                        'experiment_id': du.get('experiment_id'),
+                        'is_canonical': du.get('is_canonical'),
+                        'is_retired': du.get('is_retired'),
+                        'name': du.get('name')
+                    }
+                )
             return Response(response_data)
         else:
             raise PermissionDenied(
                 detail="PermissionDenied: unable to GET /projects/{0}/experiments".format(kwargs.get('pk')))
+
+    @action(detail=True, methods=['get', 'put', 'patch'])
+    def membership(self, request, *args, **kwargs):
+        """
+        GET, PUT, PATCH: list / update experiment members
+        - project_members        - array of user-experiment
+        - project_owners         - array of user-experiment
+
+        Permission:
+        - user is_project_creator OR
+        - user is_project_owner
+        """
+        project = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
+        if project.is_creator(request.user) or project.is_owner(request.user):
+            if str(request.method).casefold() in ['put', 'patch']:
+                project_members = request.data.get('project_members')
+                project_owners = request.data.get('project_owners')
+                if isinstance(project_members, list) and all([isinstance(item, int) for item in project_members]):
+                    project_members_orig = UserProject.objects.filter(
+                        project__id=project.id,
+                        project_role=UserProject.RoleType.PROJECT_MEMBER
+                    ).values_list('user__id', flat=True)
+                    project_members_added = list(set(project_members).difference(set(project_members_orig)))
+                    project_members_removed = list(set(project_members_orig).difference(set(project_members)))
+                    for pk in project_members_added:
+                        if AerpawUser.objects.filter(pk=pk).exists():
+                            user = AerpawUser.objects.get(pk=pk)
+                            membership = UserProject()
+                            membership.granted_by = request.user
+                            membership.project = project
+                            membership.project_role = UserProject.RoleType.PROJECT_MEMBER
+                            membership.user = user
+                            membership.save()
+                    for pk in project_members_removed:
+                        membership = UserProject.objects.get(
+                            project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_MEMBER)
+                        membership.delete()
+                if isinstance(project_owners, list) and all([isinstance(item, int) for item in project_owners]):
+                    project_owners_orig = UserProject.objects.filter(
+                        project__id=project.id,
+                        project_role=UserProject.RoleType.PROJECT_OWNER
+                    ).values_list('user__id', flat=True)
+                    project_owners_added = list(set(project_owners).difference(set(project_owners_orig)))
+                    project_owners_removed = list(set(project_owners_orig).difference(set(project_owners)))
+                    for pk in project_owners_added:
+                        if AerpawUser.objects.filter(pk=pk).exists():
+                            user = AerpawUser.objects.get(pk=pk)
+                            membership = UserProject()
+                            membership.granted_by = request.user
+                            membership.project = project
+                            membership.project_role = UserProject.RoleType.PROJECT_OWNER
+                            membership.user = user
+                            membership.save()
+                    for pk in project_owners_removed:
+                        membership = UserProject.objects.get(
+                            project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_OWNER)
+                        membership.delete()
+            # End of PUT, PATCH section - All reqeust types return membership
+            serializer = ProjectSerializerDetail(project)
+            du = dict(serializer.data)
+            project_members = []
+            project_owners = []
+            for p in du.get('project_membership'):
+                person = {
+                    'granted_by': p.get('granted_by'),
+                    'granted_date': str(p.get('granted_date')),
+                    'user_id': p.get('user_id')
+                }
+                if p.get('project_role') == UserProject.RoleType.PROJECT_MEMBER:
+                    project_members.append(person)
+                if p.get('project_role') == UserProject.RoleType.PROJECT_OWNER:
+                    project_owners.append(person)
+            response_data = {
+                'project_members': project_members,
+                'project_owners': project_owners
+            }
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET,PUT,PATCH /projects/{0}/membership".format(kwargs.get('pk')))
 
 
 class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
@@ -304,7 +420,7 @@ class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upd
     - retrieve one
     """
     permission_classes = [permissions.IsAuthenticated]
-    queryset = UserProject.objects.all().order_by('-granted_date')
+    queryset = UserProject.objects.all().order_by('-granted_date').distinct()
     serializer_class = UserProjectSerializer
 
     def get_queryset(self):
@@ -314,17 +430,17 @@ class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upd
             queryset = UserProject.objects.filter(
                 project__id=project_id,
                 user__id=user_id
-            ).order_by('-granted_date')
+            ).order_by('-granted_date').distinct()
         elif project_id:
             queryset = UserProject.objects.filter(
                 project__id=project_id
-            ).order_by('-granted_date')
+            ).order_by('-granted_date').distinct()
         elif user_id:
             queryset = UserProject.objects.filter(
                 user__id=user_id
-            ).order_by('-granted_date')
+            ).order_by('-granted_date').distinct()
         else:
-            queryset = UserProject.objects.filter().order_by('-granted_date')
+            queryset = UserProject.objects.filter().order_by('-granted_date').distinct()
         return queryset
 
     def list(self, request, *args, **kwargs):

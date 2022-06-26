@@ -26,9 +26,9 @@ class ProjectSerializerDetail(serializers.ModelSerializer):
     last_modified_by = serializers.CharField(source='modified_by')
     modified_date = serializers.DateTimeField(source='modified')
     project_id = serializers.IntegerField(source='id', read_only=True)
-    project_personnel = UserProjectSerializer(source='userproject_set', many=True)
+    project_membership = UserProjectSerializer(source='userproject_set', many=True)
 
     class Meta:
         model = AerpawProject
         fields = ['created_date', 'description', 'is_deleted', 'is_public', 'last_modified_by', 'modified_date',
-                  'name', 'project_creator', 'project_id', 'project_personnel']
+                  'name', 'project_creator', 'project_id', 'project_membership']

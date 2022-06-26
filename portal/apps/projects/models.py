@@ -20,7 +20,7 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
     - modified_by (from AuditModelMixin)
     - name
     - project_creator (fk)
-    - project_personnel (m2m)
+    - project_membership (m2m)
     - uuid
     """
     description = models.TextField()
@@ -32,9 +32,9 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
         related_name='project_creator',
         on_delete=models.PROTECT
     )
-    project_personnel = models.ManyToManyField(
+    project_membership = models.ManyToManyField(
         AerpawUser,
-        related_name='project_personnel',
+        related_name='project_membership',
         through='UserProject',
         through_fields=('project', 'user')
     )

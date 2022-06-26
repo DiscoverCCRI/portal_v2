@@ -16,7 +16,7 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
     - created (from AuditModelMixin)
     - created_by (from AuditModelMixin)
     - description
-    - experiment_members
+    - experiment_membership
     - experiment_state
     - id (from Basemodel)
     - is_canonical
@@ -50,18 +50,18 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
         related_name='experiment_creator',
         on_delete=models.PROTECT
     )
-    experiment_members = models.ManyToManyField(
+    experiment_membership = models.ManyToManyField(
         AerpawUser,
-        related_name='experiment_members',
+        related_name='experiment_membership',
         through='UserExperiment',
         through_fields=('experiment', 'user')
     )
     experiment_state = models.CharField(
         max_length=255,
         choices=ExperimentState.choices,
-        default=ExperimentState.ACTIVE_DEVELOPMENT
+        default=ExperimentState.SAVED
     )
-    is_canonical = models.BooleanField(default=True)
+    is_canonical = models.BooleanField(default=False)
     is_deleted = models.BooleanField(default=False)
     is_retired = models.BooleanField(default=False)
     name = models.CharField(max_length=255, blank=False, null=False)
@@ -81,6 +81,13 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
 
     def __str__(self):
         return self.name
+
+    def is_creator(self, user: AerpawUser) -> bool:
+        return user == self.experiment_creator
+
+    def is_member(self, user: AerpawUser) -> bool:
+        return UserExperiment.objects.filter(
+            user=user, experiment=self).exists()
 
     def state(self):
         return self.experiment_state
