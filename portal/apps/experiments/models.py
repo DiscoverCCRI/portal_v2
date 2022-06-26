@@ -2,7 +2,7 @@ from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 
-from portal.apps.mixins.models import AuditModelMixin, BaseModel
+from portal.apps.mixins.models import AuditModelMixin, BaseModel, BaseTimestampModel
 from portal.apps.operations.models import CanonicalNumber
 from portal.apps.projects.models import AerpawProject
 from portal.apps.resources.models import AerpawResource
@@ -108,3 +108,49 @@ class UserExperiment(BaseModel, models.Model):
     granted_by = models.ForeignKey(AerpawUser, related_name='experiment_granted_by', on_delete=models.CASCADE)
     granted_date = models.DateTimeField(auto_now_add=True)
     user = models.ForeignKey(AerpawUser, related_name='experiment_user', on_delete=models.CASCADE)
+
+
+class ExperimentSession(BaseModel, BaseTimestampModel, models.Model):
+    """
+    Experiment Session
+    - created (from BaseTimestampModel)
+    - ended_by
+    - ended_date_time
+    - experiment
+    - id (from Basemodel)
+    - modified (from BaseTimestampModel)
+    - session_type
+    - started_by
+    - uuid
+    """
+
+    class SessionType(models.TextChoices):
+        DEVELOPMENT = 'development', _('Development')
+        EMULATION = 'emulation', _('Emulation')
+        SANDBOX = 'sandbox', _('Sandbox')
+        TESTBED = 'testbed', _('Testbed')
+
+    ended_by = models.ForeignKey(
+        AerpawUser,
+        related_name='session_ended_by',
+        on_delete=models.PROTECT,
+        blank=True,
+        null=True
+    )
+    end_date_time = models.DateTimeField(blank=True, null=True)
+    experiment = models.ForeignKey(
+        AerpawExperiment,
+        related_name='session_experiment',
+        on_delete=models.PROTECT
+    )
+    session_type = models.CharField(
+        max_length=255,
+        choices=SessionType.choices,
+        default=SessionType.DEVELOPMENT
+    )
+    started_by = models.ForeignKey(
+        AerpawUser,
+        related_name='session_started_by',
+        on_delete=models.PROTECT
+    )
+    uuid = models.CharField(max_length=255, primary_key=False, editable=False)

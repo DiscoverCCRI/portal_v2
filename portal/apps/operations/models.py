@@ -35,7 +35,7 @@ def increment_current_canonical_number() -> int:
     return current_canonical_number
 
 
-class CanonicalNumber(BaseModel, BaseTimestampModel):
+class CanonicalNumber(BaseModel, BaseTimestampModel, models.Model):
     """
     Canonical Number
     - canonical_number

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from portal.apps.experiments.models import AerpawExperiment, UserExperiment
+from portal.apps.experiments.models import AerpawExperiment, UserExperiment, ExperimentSession
 
 
 class UserExperimentSerializer(serializers.ModelSerializer):
@@ -36,3 +36,16 @@ class ExperimentSerializerDetail(serializers.ModelSerializer):
         fields = ['canonical_number', 'created_date', 'description', 'experiment_creator', 'experiment_id',
                   'experiment_membership', 'experiment_state', 'is_canonical', 'is_retired', 'last_modified_by',
                   'modified_date', 'name', 'project_id', 'resources']
+
+
+class ExperimentSessionSerializer(serializers.ModelSerializer):
+    ended_by = serializers.IntegerField(source='ended_by.id')
+    experiment_id = serializers.IntegerField(source='experiment.id')
+    session_id = serializers.IntegerField(source='id')
+    start_date_time = serializers.DateTimeField(source='created')
+    started_by = serializers.IntegerField(source='started_by.id')
+
+    class Meta:
+        model = ExperimentSession
+        fields = ['end_date_time', 'ended_by', 'experiment_id', 'session_id', 'session_type',
+                  'start_date_time', 'started_by']

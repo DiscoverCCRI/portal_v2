@@ -11,8 +11,8 @@ from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.viewsets import GenericViewSet
 
 from portal.apps.experiments.api.serializers import ExperimentSerializerDetail, ExperimentSerializerList, \
-    UserExperimentSerializer
-from portal.apps.experiments.models import AerpawExperiment, UserExperiment
+    ExperimentSessionSerializer, UserExperimentSerializer
+from portal.apps.experiments.models import AerpawExperiment, ExperimentSession, UserExperiment
 from portal.apps.operations.models import CanonicalNumber, get_current_canonical_number, \
     increment_current_canonical_number
 from portal.apps.projects.models import AerpawProject
@@ -366,7 +366,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
 
 class UserExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
     """
-    UserExperiment
+    User Experiment
     - paginated list
     - retrieve one
     """
@@ -483,3 +483,172 @@ class UserExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, 
         DELETE: user-experiment cannot be deleted via the API
         """
         raise MethodNotAllowed(method="DELETE: /user-experiment/{int:pk}")
+
+
+class ExperimentSessionViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
+    """
+    Experiment Session
+    - paginated list
+    - retrieve one
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = ExperimentSession.objects.all().order_by('-created').distinct()
+    serializer_class = ExperimentSessionSerializer
+
+    def get_queryset(self):
+        experiment_id = self.request.query_params.get('experiment_id', None)
+        user_id = self.request.query_params.get('user_id', None)
+        if experiment_id and user_id:
+            queryset = ExperimentSession.objects.filter(
+                experiment__id=experiment_id,
+                user__id=user_id
+            ).order_by('-created').distinct()
+        elif experiment_id:
+            queryset = ExperimentSession.objects.filter(
+                experiment__id=experiment_id
+            ).order_by('-created').distinct()
+        elif user_id:
+            queryset = ExperimentSession.objects.filter(
+                user__id=user_id
+            ).order_by('-created').distinct()
+        else:
+            queryset = ExperimentSession.objects.filter().order_by('-created').distinct()
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        GET: list experiment-session as paginated results
+        - end_date_time          - string
+        - ended_by (fk)          - user_id
+        - experiment_id (fk)     - int
+        - session_id (pk)        - int
+        - session_type           - string
+        - start_date_time        - string
+        - started_by (fk)        - user_id
+
+        Permission:
+        - user is_operator
+        """
+        if request.user.is_operator():
+            page = self.paginate_queryset(self.get_queryset())
+            if page:
+                serializer = ExperimentSessionSerializer(page, many=True)
+            else:
+                serializer = ExperimentSessionSerializer(self.get_queryset(), many=True)
+            response_data = []
+            for u in serializer.data:
+                du = dict(u)
+                response_data.append(
+                    {
+                        'end_date_time': du.get('end_date_time'),
+                        'ended_by': du.get('ended_by'),
+                        'experiment_id': du.get('experiment_id'),
+                        'session_id': du.get('session_id'),
+                        'session_type': du.get('session_type'),
+                        'start_date_time': du.get('start_date_time'),
+                        'started_by': du.get('started_by')
+                    }
+                )
+            if page:
+                return self.get_paginated_response(response_data)
+            else:
+                return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /experiment-session list")
+
+    def create(self, request):
+        """
+        POST: create a new experiment-session
+        - end_date_time          - string
+        - ended_by (fk)          - user_id
+        - experiment_id (fk)     - int
+        - session_id (pk)        - int
+        - session_type           - string
+        - start_date_time        - string
+        - started_by (fk)        - user_id
+
+        Permission:
+        - user is_operator
+        """
+        raise MethodNotAllowed(method="POST: /experiment-session")
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        GET: retrieve experiment-session as detailed result
+        - end_date_time          - string
+        - ended_by (fk)          - user_id
+        - experiment_id (fk)     - int
+        - session_id (pk)        - int
+        - session_type           - string
+        - start_date_time        - string
+        - started_by (fk)        - user_id
+
+        Permission:
+        - user is_operator
+        """
+        experiment_session = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if request.user.is_operator():
+            serializer = ExperimentSessionSerializer(experiment_session)
+            du = dict(serializer.data)
+            response_data = {
+                'end_date_time': du.get('end_date_time'),
+                'ended_by': du.get('ended_by'),
+                'experiment_id': du.get('experiment_id'),
+                'session_id': du.get('session_id'),
+                'session_type': du.get('session_type'),
+                'start_date_time': du.get('start_date_time'),
+                'started_by': du.get('started_by')
+            }
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /experiment-session/{0} details".format(kwargs.get('pk')))
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT: update an existing experiment-session
+        - end_date_time          - string
+        - ended_by (fk)          - user_id
+        - experiment_id (fk)     - int
+        - session_id (pk)        - int
+        - session_type           - string
+        - start_date_time        - string
+        - started_by (fk)        - user_id
+
+        Permission:
+        - user is_operator
+        """
+        raise MethodNotAllowed(method="PUT/PATCH: /experiment-session/{int:pk}")
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH: update an existing experiment-session
+        - end_date_time          - string
+        - ended_by (fk)          - user_id
+        - experiment_id (fk)     - int
+        - session_id (pk)        - int
+        - session_type           - string
+        - start_date_time        - string
+        - started_by (fk)        - user_id
+
+        Permission:
+        - user is_operator
+        """
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, pk=None):
+        """
+        DELETE: remove an existing experiment-session
+        - end_date_time          - string
+        - ended_by (fk)          - user_id
+        - experiment_id (fk)     - int
+        - session_id (pk)        - int
+        - session_type           - string
+        - start_date_time        - string
+        - started_by (fk)        - user_id
+
+        Permission:
+        - user is_operator
+        """
+        raise MethodNotAllowed(method="DELETE: /experiment-session/{int:pk}")
