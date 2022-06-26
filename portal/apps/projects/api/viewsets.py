@@ -10,11 +10,11 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.viewsets import GenericViewSet
 
+from portal.apps.experiments.api.serializers import ExperimentSerializerDetail
+from portal.apps.experiments.models import AerpawExperiment
 from portal.apps.projects.api.serializers import ProjectSerializerDetail, ProjectSerializerList, UserProjectSerializer
 from portal.apps.projects.models import AerpawProject, UserProject
 from portal.apps.users.models import AerpawUser
-from portal.apps.experiments.api.serializers import ExperimentSerializerDetail
-from portal.apps.experiments.models import AerpawExperiment
 
 # constants
 PROJECT_MIN_NAME_LEN = 5
@@ -485,7 +485,7 @@ class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upd
 
     def create(self, request):
         """
-        POST: user cannot be created via the API
+        POST: user-project cannot be created via the API
         """
         raise MethodNotAllowed(method="POST: /user-project")
 
@@ -523,7 +523,7 @@ class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upd
         """
         PUT: user-project cannot be updated via the API
         """
-        raise MethodNotAllowed(method="PUT/PATCH: /user-project/{user_id}")
+        raise MethodNotAllowed(method="PUT/PATCH: /user-project/{int:pk}")
 
     def partial_update(self, request, *args, **kwargs):
         """
@@ -535,4 +535,4 @@ class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upd
         """
         DELETE: user-project cannot be deleted via the API
         """
-        raise MethodNotAllowed(method="DELETE: /user-project/{user_id}")
+        raise MethodNotAllowed(method="DELETE: /user-project/{int:pk}")

@@ -16,7 +16,7 @@ class AerpawUserProfile(BaseModel, AuditModelMixin):
     - refresh_token
     - uuid
     """
-    # add additional user fields
+
     access_token = models.TextField(null=True, blank=True)
     refresh_token = models.TextField(null=True, blank=True)
     uuid = models.CharField(max_length=255, primary_key=False, editable=False)

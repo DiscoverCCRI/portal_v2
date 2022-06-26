@@ -10,12 +10,13 @@ from rest_framework.response import Response
 from rest_framework.status import HTTP_204_NO_CONTENT
 from rest_framework.viewsets import GenericViewSet
 
-from portal.apps.experiments.api.serializers import ExperimentSerializerList, ExperimentSerializerDetail
+from portal.apps.experiments.api.serializers import ExperimentSerializerDetail, ExperimentSerializerList, \
+    UserExperimentSerializer
 from portal.apps.experiments.models import AerpawExperiment, UserExperiment
-from portal.apps.users.models import AerpawUser
-from portal.apps.projects.models import AerpawProject
 from portal.apps.operations.models import CanonicalNumber, get_current_canonical_number, \
     increment_current_canonical_number
+from portal.apps.projects.models import AerpawProject
+from portal.apps.users.models import AerpawUser
 
 # constants
 EXPERIMENT_MIN_NAME_LEN = 5
@@ -363,133 +364,122 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                 detail="PermissionDenied: unable to GET,PUT,PATCH /experiments/{0}/membership".format(kwargs.get('pk')))
 
 
-# class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
-#     """
-#     UserProject
-#     - paginated list
-#     - retrieve one
-#     """
-#     permission_classes = [permissions.IsAuthenticated]
-#     queryset = UserProject.objects.all().order_by('-granted_date')
-#     serializer_class = UserProjectSerializer
-#
-#     def get_queryset(self):
-#         project_id = self.request.query_params.get('project_id', None)
-#         user_id = self.request.query_params.get('user_id', None)
-#         if project_id and user_id:
-#             queryset = UserProject.objects.filter(
-#                 project__id=project_id,
-#                 user__id=user_id
-#             ).order_by('-granted_date')
-#         elif project_id:
-#             queryset = UserProject.objects.filter(
-#                 project__id=project_id
-#             ).order_by('-granted_date')
-#         elif user_id:
-#             queryset = UserProject.objects.filter(
-#                 user__id=user_id
-#             ).order_by('-granted_date')
-#         else:
-#             queryset = UserProject.objects.filter().order_by('-granted_date')
-#         return queryset
-#
-#     def list(self, request, *args, **kwargs):
-#         """
-#         GET: list user-project as paginated results
-#         - granted_by             - int
-#         - granted_date           - string
-#         - id                     - int
-#         - project_id             - int
-#         - project_role           - string
-#         - user_id                - int
-#
-#         Permission:
-#         - user is_operator
-#         """
-#         if request.user.is_operator():
-#             page = self.paginate_queryset(self.get_queryset())
-#             if page:
-#                 serializer = UserProjectSerializer(page, many=True)
-#             else:
-#                 serializer = UserProjectSerializer(self.get_queryset(), many=True)
-#             response_data = []
-#             for u in serializer.data:
-#                 du = dict(u)
-#                 response_data.append(
-#                     {
-#                         'granted_by': du.get('granted_by'),
-#                         'granted_date': du.get('granted_date'),
-#                         'id': du.get('id'),
-#                         'project_id': du.get('project_id'),
-#                         'project_role': du.get('project_role'),
-#                         'user_id': du.get('user_id')
-#                     }
-#                 )
-#             if page:
-#                 return self.get_paginated_response(response_data)
-#             else:
-#                 return Response(response_data)
-#         else:
-#             raise PermissionDenied(
-#                 detail="PermissionDenied: unable to GET /user-project list")
-#
-#     def create(self, request):
-#         """
-#         POST: user cannot be created via the API
-#         """
-#         raise MethodNotAllowed(method="POST: /user-project")
-#
-#     def retrieve(self, request, *args, **kwargs):
-#         """
-#         GET: user-project as detailed result
-#         - granted_by             - int
-#         - granted_date           - string
-#         - id                     - int
-#         - project_id             - int
-#         - project_role           - string
-#         - user_id                - int
-#
-#         Permission:
-#         - user is_operator
-#         """
-#         user_project = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
-#         if request.user.is_operator():
-#             serializer = UserProjectSerializer(user_project)
-#             du = dict(serializer.data)
-#             response_data = {
-#                 'granted_by': du.get('granted_by'),
-#                 'granted_date': du.get('granted_date'),
-#                 'id': du.get('id'),
-#                 'project_id': du.get('project_id'),
-#                 'project_role': du.get('project_role'),
-#                 'user_id': du.get('user_id')
-#             }
-#             return Response(response_data)
-#         else:
-#             raise PermissionDenied(
-#                 detail="PermissionDenied: unable to GET /user-project/{0} details".format(kwargs.get('pk')))
-#
-#     def update(self, request, *args, **kwargs):
-#         """
-#         PUT: user-project cannot be updated via the API
-#         """
-#         raise MethodNotAllowed(method="PUT/PATCH: /user-project/{user_id}")
-#
-#     def partial_update(self, request, *args, **kwargs):
-#         """
-#         PATCH: user-project cannot be updated via the API
-#         """
-#         return self.update(request, *args, **kwargs)
-#
-#     def destroy(self, request, pk=None):
-#         """
-#         DELETE: user-project cannot be deleted via the API
-#         """
-#         raise MethodNotAllowed(method="DELETE: /user-project/{user_id}")
+class UserExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
+    """
+    UserExperiment
+    - paginated list
+    - retrieve one
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = UserExperiment.objects.all().order_by('-granted_date').distinct()
+    serializer_class = UserExperimentSerializer
 
+    def get_queryset(self):
+        experiment_id = self.request.query_params.get('experiment_id', None)
+        user_id = self.request.query_params.get('user_id', None)
+        if experiment_id and user_id:
+            queryset = UserExperiment.objects.filter(
+                experiment__id=experiment_id,
+                user__id=user_id
+            ).order_by('-granted_date').distinct()
+        elif experiment_id:
+            queryset = UserExperiment.objects.filter(
+                experiment__id=experiment_id
+            ).order_by('-granted_date').distinct()
+        elif user_id:
+            queryset = UserExperiment.objects.filter(
+                user__id=user_id
+            ).order_by('-granted_date').distinct()
+        else:
+            queryset = UserExperiment.objects.filter().order_by('-granted_date').distinct()
+        return queryset
 
-    #         # validate experiment_state
-    #         experiment_state = request.data.get('experiment_state', None)
-    #         if experiment_state not in [c[0] for c in AerpawExperiment.ExperimentState.choices]:
-    #             raise ValidationError(
-    #                 detail="experiment_state: invalid value for experiment_state")
+    def list(self, request, *args, **kwargs):
+        """
+        GET: list user-experiment as paginated results
+        - experiment_id          - int
+        - granted_by             - int
+        - granted_date           - string
+        - id                     - int
+        - user_id                - int
+
+        Permission:
+        - user is_operator
+        """
+        if request.user.is_operator():
+            page = self.paginate_queryset(self.get_queryset())
+            if page:
+                serializer = UserExperimentSerializer(page, many=True)
+            else:
+                serializer = UserExperimentSerializer(self.get_queryset(), many=True)
+            response_data = []
+            for u in serializer.data:
+                du = dict(u)
+                response_data.append(
+                    {
+                        'experiment_id': du.get('experiment_id'),
+                        'granted_by': du.get('granted_by'),
+                        'granted_date': du.get('granted_date'),
+                        'id': du.get('id'),
+                        'user_id': du.get('user_id')
+                    }
+                )
+            if page:
+                return self.get_paginated_response(response_data)
+            else:
+                return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /user-experiment list")
+
+    def create(self, request):
+        """
+        POST: user-experiment cannot be created via the API
+        """
+        raise MethodNotAllowed(method="POST: /user-experiment")
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        GET: user-experiment as detailed result
+        - experiment_id          - int
+        - granted_by             - int
+        - granted_date           - string
+        - id                     - int
+        - user_id                - int
+
+        Permission:
+        - user is_operator
+        """
+        user_experiment = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if request.user.is_operator():
+            serializer = UserExperimentSerializer(user_experiment)
+            du = dict(serializer.data)
+            response_data = {
+                'experiment_id': du.get('experiment_id'),
+                'granted_by': du.get('granted_by'),
+                'granted_date': du.get('granted_date'),
+                'id': du.get('id'),
+                'user_id': du.get('user_id')
+            }
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /user-experiment/{0} details".format(kwargs.get('pk')))
+
+    def update(self, request, *args, **kwargs):
+        """
+        PUT: user-experiment cannot be updated via the API
+        """
+        raise MethodNotAllowed(method="PUT/PATCH: /user-experiment/{int:pk}")
+
+    def partial_update(self, request, *args, **kwargs):
+        """
+        PATCH: user-experiment cannot be updated via the API
+        """
+        return self.update(request, *args, **kwargs)
+
+    def destroy(self, request, pk=None):
+        """
+        DELETE: user-experiment cannot be deleted via the API
+        """
+        raise MethodNotAllowed(method="DELETE: /user-experiment/{int:pk}")

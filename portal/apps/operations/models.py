@@ -1,5 +1,6 @@
-from django.db import models
 from datetime import datetime
+
+from django.db import models
 
 from portal.apps.mixins.models import BaseModel, BaseTimestampModel
 
@@ -50,4 +51,4 @@ class CanonicalNumber(BaseModel, BaseTimestampModel):
     is_retired = models.BooleanField(default=False)
 
     def timestamp(self) -> int:
-        return int(round(1000*datetime.strptime(str(self.created), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()))
+        return int(round(1000 * datetime.strptime(str(self.created), "%Y-%m-%dT%H:%M:%S.%f%z").timestamp()))

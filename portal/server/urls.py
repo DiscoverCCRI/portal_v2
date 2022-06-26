@@ -13,13 +13,14 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.contrib import admin
 from django.urls import include, path
 from django.views.generic.base import TemplateView
 from rest_framework import routers
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView, TokenVerifyView
 
-from portal.apps.experiments.api.viewsets import ExperimentViewSet
+from portal.apps.experiments.api.viewsets import ExperimentViewSet, UserExperimentViewSet
 from portal.apps.operations.api.viewsets import CanonicalNumberViewSet
 from portal.apps.projects.api.viewsets import ProjectViewSet, UserProjectViewSet
 from portal.apps.resources.api.viewsets import ResourceViewSet
@@ -32,6 +33,7 @@ router.register(r'canonical-number', CanonicalNumberViewSet, basename='canonical
 router.register(r'experiments', ExperimentViewSet, basename='experiments')
 router.register(r'projects', ProjectViewSet, basename='projects')
 router.register(r'resources', ResourceViewSet, basename='resources')
+router.register(r'user-experiment', UserExperimentViewSet, basename='user-experiment')
 router.register(r'user-project', UserProjectViewSet, basename='user-project')
 router.register(r'users', UserViewSet, basename='users')
 

@@ -4,9 +4,9 @@ from django.utils.translation import gettext_lazy as _
 
 from portal.apps.mixins.models import AuditModelMixin, BaseModel
 from portal.apps.operations.models import CanonicalNumber
-from portal.apps.users.models import AerpawUser
 from portal.apps.projects.models import AerpawProject
 from portal.apps.resources.models import AerpawResource
+from portal.apps.users.models import AerpawUser
 
 
 class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
@@ -28,6 +28,7 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
     - resources
     - uuid
     """
+
     class ExperimentState(models.TextChoices):
         ACTIVE_DEVELOPMENT = 'active_development', _('Active Development')
         ACTIVE_EMULATION = 'active_emulation', _('Active Emulation')
@@ -102,6 +103,7 @@ class UserExperiment(BaseModel, models.Model):
     - id (from Basemodel)
     - user_id
     """
+
     experiment = models.ForeignKey(AerpawExperiment, on_delete=models.CASCADE)
     granted_by = models.ForeignKey(AerpawUser, related_name='experiment_granted_by', on_delete=models.CASCADE)
     granted_date = models.DateTimeField(auto_now_add=True)

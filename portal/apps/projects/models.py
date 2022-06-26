@@ -23,6 +23,7 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
     - project_membership (m2m)
     - uuid
     """
+
     description = models.TextField()
     is_deleted = models.BooleanField(default=False)
     is_public = models.BooleanField(default=False)

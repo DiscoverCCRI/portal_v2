@@ -44,7 +44,7 @@ class AerpawUser(BaseModel, AuditModelMixin, AbstractUser):
     - username (from AbstractUser)
     - uuid
     """
-    # add additional user fields
+
     display_name = models.CharField(max_length=255)
     openid_sub = models.CharField(max_length=255)
     profile = models.ForeignKey(
