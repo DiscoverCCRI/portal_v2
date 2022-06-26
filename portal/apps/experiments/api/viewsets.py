@@ -336,11 +336,13 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                     for pk in experiment_members_added:
                         if AerpawUser.objects.filter(pk=pk).exists():
                             user = AerpawUser.objects.get(pk=pk)
-                            membership = UserExperiment()
-                            membership.granted_by = request.user
-                            membership.experiment = experiment
-                            membership.user = user
-                            membership.save()
+                            # limited to project membership (project_member, project_owner)
+                            if experiment.project.is_member(user) or experiment.project.is_owner(user):
+                                membership = UserExperiment()
+                                membership.granted_by = request.user
+                                membership.experiment = experiment
+                                membership.user = user
+                                membership.save()
                     for pk in experiment_members_removed:
                         membership = UserExperiment.objects.get(
                             experiment__id=experiment.id, user__id=pk)

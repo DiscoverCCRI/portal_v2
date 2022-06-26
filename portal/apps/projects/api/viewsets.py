@@ -358,12 +358,14 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                     for pk in project_members_added:
                         if AerpawUser.objects.filter(pk=pk).exists():
                             user = AerpawUser.objects.get(pk=pk)
-                            membership = UserProject()
-                            membership.granted_by = request.user
-                            membership.project = project
-                            membership.project_role = UserProject.RoleType.PROJECT_MEMBER
-                            membership.user = user
-                            membership.save()
+                            # experimenter or pi roles only
+                            if user.is_experimenter() or user.is_pi():
+                                membership = UserProject()
+                                membership.granted_by = request.user
+                                membership.project = project
+                                membership.project_role = UserProject.RoleType.PROJECT_MEMBER
+                                membership.user = user
+                                membership.save()
                     for pk in project_members_removed:
                         membership = UserProject.objects.get(
                             project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_MEMBER)
@@ -378,12 +380,14 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                     for pk in project_owners_added:
                         if AerpawUser.objects.filter(pk=pk).exists():
                             user = AerpawUser.objects.get(pk=pk)
-                            membership = UserProject()
-                            membership.granted_by = request.user
-                            membership.project = project
-                            membership.project_role = UserProject.RoleType.PROJECT_OWNER
-                            membership.user = user
-                            membership.save()
+                            # experimenter or pi roles only
+                            if user.is_experimenter() or user.is_pi():
+                                membership = UserProject()
+                                membership.granted_by = request.user
+                                membership.project = project
+                                membership.project_role = UserProject.RoleType.PROJECT_OWNER
+                                membership.user = user
+                                membership.save()
                     for pk in project_owners_removed:
                         membership = UserProject.objects.get(
                             project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_OWNER)
