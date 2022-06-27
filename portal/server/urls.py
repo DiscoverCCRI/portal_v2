@@ -30,13 +30,13 @@ from portal.apps.users.api.viewsets import UserViewSet
 # Routers provide an easy way of automatically determining the URL conf.
 # Ordering is important for overloaded API slugs with differing ViewSet definitions
 router = routers.DefaultRouter(trailing_slash=False)
+router.register(r'canonical-experiment-number', CanonicalNumberViewSet, basename='canonical-experiment-number')
 router.register(r'canonical-experiment-resource', CanonicalExperimentResourceViewSet,
                 basename='canonical-experiment-resource')
-router.register(r'canonical-experiment-number', CanonicalNumberViewSet, basename='canonical-experiment-number')
-router.register(r'experiment-session', ExperimentSessionViewSet, basename='experiment-session')
 router.register(r'experiments', ExperimentViewSet, basename='experiments')
 router.register(r'projects', ProjectViewSet, basename='projects')
 router.register(r'resources', ResourceViewSet, basename='resources')
+router.register(r'sessions', ExperimentSessionViewSet, basename='sessions')
 router.register(r'user-experiment', UserExperimentViewSet, basename='user-experiment')
 router.register(r'user-project', UserProjectViewSet, basename='user-project')
 router.register(r'users', UserViewSet, basename='users')
