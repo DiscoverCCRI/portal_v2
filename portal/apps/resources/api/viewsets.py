@@ -15,7 +15,7 @@ from portal.apps.resources.models import AerpawResource
 from portal.apps.users.models import AerpawUser
 
 # constants
-RESOURCE_MIN_NAME_LEN = 5
+RESOURCE_MIN_NAME_LEN = 3
 RESOURCE_MIN_DESC_LEN = 5
 RESOURCE_MIN_HOSTNAME_LEN = 5
 RESOURCE_MIN_LOCATION_LEN = 3

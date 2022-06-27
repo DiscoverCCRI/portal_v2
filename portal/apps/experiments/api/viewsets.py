@@ -18,6 +18,8 @@ from portal.apps.operations.models import CanonicalNumber, get_current_canonical
     increment_current_canonical_number
 from portal.apps.projects.models import AerpawProject
 from portal.apps.users.models import AerpawUser
+from portal.apps.resources.api.serializers import ResourceSerializerDetail
+from portal.apps.resources.models import AerpawResource
 
 # constants
 EXPERIMENT_MIN_NAME_LEN = 5
@@ -312,6 +314,62 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         else:
             raise PermissionDenied(
                 detail="PermissionDenied: unable to DELETE /experiments/{0}".format(pk))
+
+    @action(detail=True, methods=['get', 'put', 'patch'])
+    def resources(self, request, *args, **kwargs):
+        """
+        GET, PUT, PATCH: list / update experiment resources
+        - resources  - array of resources
+
+        Permission:
+        - user is_experiment_creator OR
+        - user is_experiment_member
+        """
+        experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
+        if experiment.is_creator(request.user) or experiment.is_member(request.user):
+            if str(request.method).casefold() in ['put', 'patch']:
+                resources = request.data.get('experiment_resources')
+                if isinstance(resources, list) and all([isinstance(item, int) for item in resources]):
+                    resources_orig = list(set(experiment.resources.all().values_list('id', flat=True)))
+                    resources_added = list(set(resources).difference(set(resources_orig)))
+                    resources_removed = list(set(resources_orig).difference(set(resources)))
+                    # TODO: canonical-experiment-resource logic
+                    for pk in resources_added:
+                        if AerpawResource.objects.filter(pk=pk).exists():
+                            resource = AerpawResource.objects.get(pk=pk)
+                            # add resource to project
+                            experiment.resources.add(resource)
+                            # create canonical-experiment-resource if resource is_canonical
+                    for pk in resources_removed:
+                        resource = AerpawResource.objects.get(pk=pk)
+                        # remove/delete canonical-experiment-resource if resource is_canonical
+                        # add resource to project
+                        experiment.resources.remove(resource)
+                # recalculate is_canonical
+                resource_class_list = list(experiment.resources.all().values_list('resource_class', flat=True))
+                experiment.is_canonical = all([item == AerpawResource.ResourceClass.CANONICAL for item in resource_class_list])
+                experiment.save()
+            # End of PUT, PATCH section - All reqeust types return resources
+            serializer = ResourceSerializerDetail(experiment.resources, many=True)
+            response_data = []
+            for u in serializer.data:
+                du = dict(u)
+                response_data.append(
+                    {
+                        'description': du.get('description'),
+                        'is_active': du.get('is_active'),
+                        'location': du.get('location'),
+                        'name': du.get('name'),
+                        'resource_class': du.get('resource_class'),
+                        'resource_id': du.get('resource_id'),
+                        'resource_mode': du.get('resource_mode'),
+                        'resource_type': du.get('resource_type')
+                    }
+                )
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET,PUT,PATCH /experiments/{0}/membership".format(kwargs.get('pk')))
 
     @action(detail=True, methods=['get', 'put', 'patch'])
     def membership(self, request, *args, **kwargs):
