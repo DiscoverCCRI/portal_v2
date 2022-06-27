@@ -19,7 +19,7 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## canonical-experiment-number
 
-### `/canonical-experiment-number` paginated
+### `/canonical-experiment-number`
 
 - **GET** paginated list of all used (but not deleted) canonical experiment numbers (Access level `operator`)
 
@@ -34,7 +34,7 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## canonical-experiment-resource
 
-### `canonical-experiment-resource` paginated
+### `canonical-experiment-resource`
 
 - **GET** paginated list of all canonical experiment resource definitions with parameters: `experiment_id` and `resource_id` (e.g. `?experiment_id=10` or `?resource_id=5` or `?experiment_id=10&resource_id=5`) (Access level `operator`)
 
@@ -44,7 +44,7 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## experiments
 
-### `/experiments` paginated
+### `/experiments`
 
 ### `/experiments/{int:pk}`
 
@@ -54,7 +54,7 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## projects
 
-### `/projects` paginated
+### `/projects`
 
 ### `/projects/{int:pk}`
 
@@ -64,7 +64,7 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## resources
 
-### `/resources` paginated
+### `/resources`
 
 ### `/resources/{int:pk}`
 
@@ -74,25 +74,25 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## sessions
 
-### `/sessions` paginated
+### `/sessions`
 
 ### `/sessions/{int:pk}`
 
 ## user-experiment
 
-### `/user-experiment` paginated
+### `/user-experiment`
 
 ### `/user-experiment/{int:pk}`
 
 ## user-project
 
-### `/user-project` paginated
+### `/user-project`
 
 ### `/user-project/{int:pk}`
 
 ## users
 
-### `/users` paginated
+### `/users`
 
 ### `/users/{int:pk}`
 
@@ -100,5 +100,5 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ### `/users/{int:pk}/tokens`
 
-### `/token/refresh` <-- provided by DRF
+### `/token/refresh`
 
