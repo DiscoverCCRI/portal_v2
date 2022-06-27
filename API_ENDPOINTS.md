@@ -19,86 +19,86 @@ Much of this request header "preamble" will be excluded from the examples below 
 
 ## canonical-experiment-number
 
-`/canonical-experiment-number` paginated
+### `/canonical-experiment-number` paginated
 
 - **GET** paginated list of all used (but not deleted) canonical experiment numbers (Access level `operator`)
 
-`/canonical-experiment-number/{int:pk}`
+### `/canonical-experiment-number/{int:pk}`
 
 - **GET** detailed information about a single canonical number by ID (Access level `operator`)
 
-`/canonical-experiment-number/current`
+### `/canonical-experiment-number/current`
 
 - **GET** the current canonical experiment number which would be issued to the next experiment (Access level `is_active`)
 - **PUT** a new current canonical experiment number with parameter: `number` (e.g. `?number=100`) (Access level `operator`)
 
 ## canonical-experiment-resource
 
-`canonical-experiment-resource` paginated
+### `canonical-experiment-resource` paginated
 
 - **GET** paginated list of all canonical experiment resource definitions with parameters: `experiment_id` and `resource_id` (e.g. `?experiment_id=10` or `?resource_id=5` or `?experiment_id=10&resource_id=5`) (Access level `operator`)
 
-`canonical-experiment-resource/{int:pk}`
+### `canonical-experiment-resource/{int:pk}`
 
 - **GET** detailed information about a single canonical canonical experiment resource definition by ID (Access level `operator`) 
 
 ## experiments
 
-`/experiments` paginated
+### `/experiments` paginated
 
-`/experiments/{int:pk}`
+### `/experiments/{int:pk}`
 
-`/experiments/{int:pk}/membership`
+### `/experiments/{int:pk}/membership`
 
-`/experiments/{int:pk}/resources`
+### `/experiments/{int:pk}/resources`
 
 ## projects
 
-`/projects` paginated
+### `/projects` paginated
 
-`/projects/{int:pk}`
+### `/projects/{int:pk}`
 
-`/projects/{int:pk}/experiments`
+### `/projects/{int:pk}/experiments`
 
-`/projects/{int:pk}/membership`
+### `/projects/{int:pk}/membership`
 
 ## resources
 
-`/resources` paginated
+### `/resources` paginated
 
-`/resources/{int:pk}`
+### `/resources/{int:pk}`
 
-`/resources/{int:pk}/experiments`
+### `/resources/{int:pk}/experiments`
 
-`/resources/{int:pk}/projects`
+### `/resources/{int:pk}/projects`
 
 ## sessions
 
-`/sessions` paginated
+### `/sessions` paginated
 
-`/sessions/{int:pk}`
+### `/sessions/{int:pk}`
 
 ## user-experiment
 
-`/user-experiment` paginated
+### `/user-experiment` paginated
 
-`/user-experiment/{int:pk}`
+### `/user-experiment/{int:pk}`
 
 ## user-project
 
-`/user-project` paginated
+### `/user-project` paginated
 
-`/user-project/{int:pk}`
+### `/user-project/{int:pk}`
 
 ## users
 
-`/users` paginated
+### `/users` paginated
 
-`/users/{int:pk}`
+### `/users/{int:pk}`
 
-`/users/{int:pk}/credentials`
+### `/users/{int:pk}/credentials`
 
-`/users/{int:pk}/tokens`
+### `/users/{int:pk}/tokens`
 
-`/token/refresh` <-- provided by DRF
+### `/token/refresh` <-- provided by DRF
 
