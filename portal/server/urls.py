@@ -32,7 +32,7 @@ from portal.apps.users.api.viewsets import UserViewSet
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r'canonical-experiment-resource', CanonicalExperimentResourceViewSet,
                 basename='canonical-experiment-resource')
-router.register(r'canonical-number', CanonicalNumberViewSet, basename='canonical-number')
+router.register(r'canonical-experiment-number', CanonicalNumberViewSet, basename='canonical-experiment-number')
 router.register(r'experiment-session', ExperimentSessionViewSet, basename='experiment-session')
 router.register(r'experiments', ExperimentViewSet, basename='experiments')
 router.register(r'projects', ProjectViewSet, basename='projects')
