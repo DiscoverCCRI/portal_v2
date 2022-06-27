@@ -12,7 +12,7 @@ Provide examples of how to interrogate the API endpoints remotely using [cURL](h
 The user `TOKEN` will be attached as part of the request header, along with other information, when issuing a cURL command.
 
 ```bash
-curl -X "GET" -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/json" 
+curl -X "GET" -H "Authorization: Bearer ${TOKEN}" -H "Accept: application/json" "https://aerpaw..."
 ```
 
 Much of this request header "preamble" will be excluded from the examples below for readability, but it is required for the cURL command to execute successfully.
