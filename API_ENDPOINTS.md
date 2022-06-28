@@ -53,7 +53,7 @@ The request header "preamble" will be excluded from the examples below for reada
     - Parameter (optional): `resource_id`
         - e.g. `/canonical-experiment-resource?resource_id=5`
     - Parameter (optional): `experiment_id` and `resource_id`
-        - e.g. `/canonical-experiment-resource/experiment_id=10&resource_id=5`
+        - e.g. `/canonical-experiment-resource?experiment_id=10&resource_id=5`
         
 ### `/canonical-experiment-resource/{int:pk}`
 
@@ -183,7 +183,44 @@ The request header "preamble" will be excluded from the examples below for reada
 
 ### `/resources`
 
+- **GET** paginated list of all resources
+    - Access: user is active
+    - Parameter (optional): `search`
+        - e.g. `/resources?search=ugv`
+- **POST** create new resource
+    - Access: role = `operator`
+    - Data (* denotes required):
+        - *`description` - resource description as string
+        - `hostname` - resource hostname as string
+        - `ip_address` - resource IP Address as string
+        - *`is_active` - resource is active as boolean (default = `False`)
+        - `location` - resource location as string
+        - *`name` - resource name as string
+        - `ops_notes` - operator notes as string
+        - *`resource_class` - resource class as string (default = ``)
+        - *`resource_mode` - resource mode as string
+        - *`resource_type` - resource type as string
+        - Example:
+
+            ```json
+            {
+                "description": "Centennial Campus Node 1",
+                "hostname": "aerpaw182",
+                "ip_address": "123.23.34.678",
+                "is_active": true,
+                "location": "Centennial Campus",
+                "name": "CC1",
+                "ops_notes": "",
+                "resource_class": "canonical",
+                "resource_mode": "testbed",
+                "resource_type": "AFRN"
+            }
+            ```
+
 ### `/resources/{int:pk}`
+
+- **GET** detailed information about a single resource by ID
+    - Access: user is active
 
 ### `/resources/{int:pk}/experiments`
 
@@ -199,13 +236,37 @@ The request header "preamble" will be excluded from the examples below for reada
 
 ### `/user-experiment`
 
+- **GET** paginated list of all user experiment definitions
+    - Access: role = `operator`
+    - Parameter (optional): `experiment_id`
+        - e.g. `/user-experiment?experiment_id=10`
+    - Parameter (optional): `user_id`
+        - e.g. `/user-experiment?user_id=5`
+    - Parameter (optional): `experiment_id` and `user_id `
+        - e.g. `/user-experiment?experiment_id=10&user_id=5`
+
 ### `/user-experiment/{int:pk}`
+
+- **GET** detailed information about a single user experiment definition by ID 
+    - Access: role = `operator`
 
 ## user-project
 
 ### `/user-project`
 
+- **GET** paginated list of all user project definitions
+    - Access: role = `operator`
+    - Parameter (optional): `project_id`
+        - e.g. `/user-project?project_id=10`
+    - Parameter (optional): `user_id`
+        - e.g. `/user-project?user_id=5`
+    - Parameter (optional): `project_id` and `user_id `
+        - e.g. `/user-project?project_id=10&user_id=5`
+
 ### `/user-project/{int:pk}`
+
+- **GET** detailed information about a single user project definition by ID 
+    - Access: role = `operator`
 
 ## users
 
@@ -242,8 +303,8 @@ PROJECT='{
 
 ```console
 EXPERIMENT='{
-    "description": "stealey test experiment",
-    "name": "stealey test experiment",
+    "description": "demo experiment description",
+    "name": "demo experiment",
     "project_id": 2
 }'
 ```
