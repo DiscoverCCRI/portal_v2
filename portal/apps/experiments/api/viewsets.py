@@ -187,7 +187,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - description            - string
         - experiment_creator     - int
         - experiment_id          - int
-        - experiment_membership  - array of user-experiment
+        - experiment_members     - array of user-experiment
         - experiment_state       - string
         - is_canonical           - boolean
         - is_retired             - boolean
@@ -375,7 +375,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
     def membership(self, request, *args, **kwargs):
         """
         GET, PUT, PATCH: list / update experiment members
-        - experiment_membership  - array of user-experiment
+        - experiment_members     - array of user-experiment
 
         Permission:
         - user is_experiment_creator OR
@@ -417,7 +417,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                 }
                 experiment_membership.append(person)
             response_data = {
-                'experiment_membership': experiment_membership
+                'experiment_members': experiment_membership
             }
             return Response(response_data)
         else:
