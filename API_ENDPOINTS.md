@@ -39,12 +39,12 @@ The request header "preamble" will be excluded from the examples below for reada
     - Access: user `is_active`
 - **PUT** a new current canonical experiment number
     - Access: role = `operator`
-    - Parameter (optional): `number`
+    - Parameter (optional): `number` as integer
         - e.g. `/canonical-experiment-number/current?number=100`
 
 ## canonical-experiment-resource
 
-### `canonical-experiment-resource`
+### `/canonical-experiment-resource`
 
 - **GET** paginated list of all canonical experiment resource definitions
     - Access: role = `operator`
@@ -55,7 +55,7 @@ The request header "preamble" will be excluded from the examples below for reada
     - Parameter (optional): `experiment_id` and `resource_id`
         - e.g. `/canonical-experiment-resource/experiment_id=10&resource_id=5`
         
-### `canonical-experiment-resource/{int:pk}`
+### `/canonical-experiment-resource/{int:pk}`
 
 - **GET** detailed information about a single canonical canonical experiment resource definition by ID
     - Access: role = `operator` 
@@ -69,18 +69,12 @@ The request header "preamble" will be excluded from the examples below for reada
     - Access: user has project membership in the project containing the experiment
     - Parameter (optional): `search`
         - e.g. `/experiments?search=wheeler`
-
-### `/experiments/{int:pk}`
-
-- **GET** detailed information about a single experiment by ID
-    - Access: role = `operator`
-    - Access: user has project membership in the project containing the experiment
 - **POST** create new experiment
     - Access: user has experiment membership
     - Data (required):
-        - `description` - experiment description
-        - `name` - experiment name
-        - `project_id` - ID of project which to add experiment to
+        - `description` - experiment description as string
+        - `name` - experiment name as string
+        - `project_id` - ID of project which to add experiment to as integer
         - Example:
 
             ```json
@@ -91,6 +85,12 @@ The request header "preamble" will be excluded from the examples below for reada
             }
             ```
 
+### `/experiments/{int:pk}`
+
+- **GET** detailed information about a single experiment by ID
+    - Access: role = `operator`
+    - Access: user has project membership in the project containing the experiment
+
 ### `/experiments/{int:pk}/membership`
 
 - **GET**: list of `experiment_members` for a single experiment by ID
@@ -98,7 +98,7 @@ The request header "preamble" will be excluded from the examples below for reada
 - **PUT**: update `experiment_members ` for a single experiment by ID
     - Access: user has experiment membership
     - Data (optional):
-        - `experiment_members` - array of user IDs (users must also have membership within the project associated to the experiment)
+        - `experiment_members` - experiment members by user ID (users must have membership within the project associated to the experiment) as array of integers
         - Example:
             
             ```json
@@ -122,25 +122,62 @@ The request header "preamble" will be excluded from the examples below for reada
                 "experiment_resources": [1, 2]
             }
             ```
-
-
+            
 ## projects
 
 ### `/projects`
 
-```
-{
-    "description": "my project description",
-    "is_public": true,
-    "name": "my project"
-}
-```
+- **GET** paginated list of all projects
+    - Access: role = `operator`
+    - Access: user is active
+    - Parameter (optional): `search`
+        - e.g. `/projects?search=demo`
+- **POST** create new project
+    - Access: role = `pi`
+    - Data (required):
+        - `description` - project description as string
+        - `is_public` - project is publicly vieable as boolean
+        - `name` - project name as string
+        - Example:
+
+            ```json
+            {
+                "description": "my project description",
+                "is_public": true,
+                "name": "my project"
+            }
+            ```
 
 ### `/projects/{int:pk}`
 
+- **GET** detailed information about a single project by ID
+    - Access: role = `operator`
+    - Access: user has project membership
+    - Access: user is active and project `is_public` (limited view)
+
 ### `/projects/{int:pk}/experiments`
 
+- **GET**: list of `experiments` for a single project by ID
+    - Access: user has project membership
+
 ### `/projects/{int:pk}/membership`
+
+- **GET**: list of `project_members` and `project_owners` for a single project by ID
+    - Access: user has project membership
+- **PUT**: update `project_members` and/or `project_owners` for a single project by ID
+    - Access: user is `project_creator`
+    - Access: user is `project_owner`
+    - Data (optional):
+        - `project_members` - project members by user ID as array of integers
+        - `project_owners` - project owners by user ID as array of integers
+        - Example:
+            
+            ```json
+            {
+                "project_members": [1, 3, 10],
+                "project_owners": [1]
+            }
+            ```
 
 ## resources
 
@@ -182,19 +219,31 @@ The request header "preamble" will be excluded from the examples below for reada
 
 ### `/token/refresh`
 
+## Examples
 
+Set up basic exports
+
+```console
+export API_URL=''
+export ACCESS_TOKEN=''
 ```
-# Project
-{
-    "description": "stealey test description",
-    "is_public": true,
-    "name": "stealey test project"
-}
 
-# Experiment
-{
+### create a new project
+
+```console
+PROJECT='{
+    "description": "demo project description",
+    "is_public": true,
+    "name": "demo project"
+}'
+```
+
+### create an experiment
+
+```console
+EXPERIMENT='{
     "description": "stealey test experiment",
     "name": "stealey test experiment",
     "project_id": 2
-}
+}'
 ```
