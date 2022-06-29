@@ -128,7 +128,6 @@ The request header "preamble" will be excluded from the examples below for reada
 ### `/projects`
 
 - **GET** paginated list of all projects
-    - Access: role = `operator`
     - Access: user is active
     - Parameter (optional): `search`
         - e.g. `/projects?search=demo`
@@ -136,7 +135,7 @@ The request header "preamble" will be excluded from the examples below for reada
     - Access: role = `pi`
     - Data (required):
         - `description` - project description as string
-        - `is_public` - project is publicly vieable as boolean
+        - `is_public` - project is publicly viewable as boolean
         - `name` - project name as string
         - Example:
 
@@ -230,7 +229,15 @@ The request header "preamble" will be excluded from the examples below for reada
 
 ### `/sessions`
 
+- **GET** paginated list of all experiment sessions
+    - Access: role = `operator`
+    - Parameter (optional): `experiment_id`
+        - e.g. `/sessions?experiment_id=10`
+
 ### `/sessions/{int:pk}`
+
+- **GET** detailed information about a single experiment session by ID 
+    - Access: role = `operator`
 
 ## user-experiment
 
@@ -272,24 +279,50 @@ The request header "preamble" will be excluded from the examples below for reada
 
 ### `/users`
 
+- **GET** paginated list of all users
+    - Access: user is active
+    - Parameter (optional): `search`
+        - e.g. `/projects?search=bob`
+
 ### `/users/{int:pk}`
+
+- **GET** detailed information about a single user by ID
+    - Access: user as self
+    - Access: user is active (limited view)
 
 ### `/users/{int:pk}/credentials`
 
 ### `/users/{int:pk}/tokens`
 
+- **GET** detailed information about tokens by user by ID
+    - Access: user as self
+
 ### `/token/refresh`
 
-## Examples
+- **POST** generate a new `access_token`
+    - Access: user as self
+    - Data (required): `refresh_token`
+    - **NOTE**: this endpoint does not update data in the User's profile
+    - Example:
+    
+        ```json
+        {
+            "refresh": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...n3VM2kzzXOF4AWOSb4M3QmEgitnByaokmecTO423vXI"
+        }
+        ```
+
+## cURL Examples
 
 Set up basic exports
 
 ```console
-export API_URL=''
-export ACCESS_TOKEN=''
+export API_URL='http://aerpaw-dev.renci.org:8000/api'
+export ACCESS_TOKEN='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...yYACY9QZqmKXppXluUeW_A95lZVLqm9Xt0AXFCAV1Xg'
 ```
 
 ### create a new project
+
+Define a request body in JSON format for the project to POST
 
 ```console
 PROJECT='{
@@ -299,12 +332,208 @@ PROJECT='{
 }'
 ```
 
+Use the POST command to create a new project
+
+```console
+$ curl -X "POST" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" -d ${PROJECT} "${API_URL}/projects"
+
+{
+  "created_date": "2022-06-28T20:56:25.581196-04:00",
+  "description": "demo project description",
+  "is_public": true,
+  "last_modified_by": 1,
+  "modified_date": "2022-06-28T20:56:25.581243-04:00",
+  "name": "demo project",
+  "project_creator": 1,
+  "project_id": 3,
+  "project_members": [],
+  "project_owners": [
+    {
+      "granted_by": 1,
+      "granted_date": "2022-06-28T20:56:25.586423-04:00",
+      "user_id": 1
+    }
+  ]
+}
+```
+
+From the above we can see a new project was created with `project_id=3`
+
+### add some project members
+
+Search for "Yufeng" from the users endpoint
+
+```console
+$ curl -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: application/json" "${API_URL}/users?search=yufeng"
+
+{
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "display_name": "Yufeng Xin",
+      "email": "yxin@email.unc.edu",
+      "user_id": 2,
+      "username": "yxin@email.unc.edu"
+    }
+  ]
+}
+```
+
+Yufeng has a `user_id=2` which is used to add him to the project members
+
+Define a request body in JSON format for project members to PUT
+
+```console
+PROJECT_MEMBERS='{
+    "project_members": [2]
+}'
+```
+And then use the PUT command to add the project members
+
+```console
+$ curl -X "PUT" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" -d ${PROJECT_MEMBERS} "${API_URL}/projects/3/membership"
+
+{
+  "project_members": [
+    {
+      "granted_by": 1,
+      "granted_date": "2022-06-28T21:04:05.604689-04:00",
+      "user_id": 2
+    }
+  ],
+  "project_owners": [
+    {
+      "granted_by": 1,
+      "granted_date": "2022-06-28T20:56:25.586423-04:00",
+      "user_id": 1
+    }
+  ]
+}
+```
+
 ### create an experiment
+
+Next define an experiment to the project with JSON
 
 ```console
 EXPERIMENT='{
     "description": "demo experiment description",
     "name": "demo experiment",
-    "project_id": 2
+    "project_id": 3
 }'
+```
+
+And POST to the experiments endpoint
+
+```console
+$ curl -X "POST" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" -d ${EXPERIMENT} "${API_URL}/experiments"
+
+{
+  "canonical_number": 1,
+  "created_date": "2022-06-28T21:08:40.290333-04:00",
+  "description": "demo experiment description",
+  "experiment_creator": 1,
+  "experiment_id": 3,
+  "experiment_members": [
+    {
+      "granted_by": 1,
+      "granted_date": "2022-06-28T21:08:40.292835-04:00",
+      "user_id": 1
+    }
+  ],
+  "experiment_state": "saved",
+  "is_canonical": false,
+  "is_retired": false,
+  "last_modified_by": 1,
+  "modified_date": "2022-06-28T21:08:40.290350-04:00",
+  "name": "demo experiment",
+  "project_id": 3,
+  "resources": []
+}
+```
+We can see that a new experiment was created with `experiment_id=3` and it's linked to `project_id=3`
+
+Finally find a canonical resource named "CC1" to add to the experiment
+
+```console
+$ curl -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: application/json" "${API_URL}/resources?search=cc1"
+
+
+  "count": 1,
+  "next": null,
+  "previous": null,
+  "results": [
+    {
+      "description": "Centennial Campus Node 1",
+      "is_active": true,
+      "location": "Centennial Campus",
+      "name": "CC1",
+      "resource_class": "canonical",
+      "resource_id": 1,
+      "resource_mode": "testbed",
+      "resource_type": "AFRN"
+    }
+  ]
+}
+```
+
+CC1 has `resource_id=1`, define some JSON to experess this
+
+```console
+EXP_RESOURCES='{
+    "experiment_resources": [1]
+}'
+```
+
+Use PUT to add the resource to the experiment
+
+```console
+$ curl -X "PUT" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Content-Type: application/json" -d ${EXP_RESOURCES} "${API_URL}/experiments/3/resources"
+
+[
+  {
+    "description": "Centennial Campus Node 1",
+    "is_active": true,
+    "location": "Centennial Campus",
+    "name": "CC1",
+    "resource_class": "canonical",
+    "resource_id": 1,
+    "resource_mode": "testbed",
+    "resource_type": "AFRN"
+  }
+]
+```
+We can see the array of resource associate to the project (currently just CC1)
+
+With all of the resources for the experiment of class "canonical", the experiment itself should also be denoted as "canonical"
+
+```console
+$ curl -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: application/json" "${API_URL}/experiments/3"
+
+{
+  "canonical_number": 1,
+  "created_date": "2022-06-28T21:08:40.290333-04:00",
+  "description": "demo experiment description",
+  "experiment_creator": 1,
+  "experiment_id": 3,
+  "experiment_members": [
+    {
+      "granted_by": 1,
+      "granted_date": "2022-06-28T21:08:40.292835-04:00",
+      "user_id": 1
+    }
+  ],
+  "experiment_state": "saved",
+  "is_canonical": true,
+  "is_retired": false,
+  "last_modified_by": 1,
+  "modified_date": "2022-06-28T21:15:06.635979-04:00",
+  "name": "demo experiment",
+  "project_id": 3,
+  "resources": [
+    1
+  ]
+}
 ```
