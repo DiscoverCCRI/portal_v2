@@ -37,6 +37,7 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
     serializer_class = ResourceSerializerDetail
 
     def get_queryset(self):
+        print(self.request.query_params)
         search = self.request.query_params.get('search', None)
         if search:
             queryset = AerpawResource.objects.filter(

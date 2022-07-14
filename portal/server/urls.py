@@ -54,4 +54,5 @@ urlpatterns = [
     path('auth/', include('django.contrib.auth.urls')),
     path('oidc/', include('mozilla_django_oidc.urls')),
     path('profile/', include('portal.apps.profiles.urls')),  # profiles app
+    path('resources/', include('portal.apps.resources.urls')),  # resources app
 ]

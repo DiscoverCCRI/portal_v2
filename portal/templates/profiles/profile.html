@@ -1,7 +1,9 @@
 {% extends 'base.html' %}
 {% load profiles_tags %}
 
-{% block title %}Home{% endblock %}
+{% block title %}
+    Profile
+{% endblock %}
 
 {% block head %}
     <script>
@@ -30,7 +32,7 @@
         <div class="text-danger" style="font-size: large">{{ message }}</div>
     {% endif %}
     {% if user.is_authenticated %}
-        <div class="w-85">
+        <div class="container w-85">
             {% if user_data.is_active %}
                 <h1>{{ user_data.display_name }} <a class="text-success" style="font-size: medium">(Active)</a></h1>
             {% else %}

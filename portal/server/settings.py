@@ -126,6 +126,7 @@ TEMPLATES = [
             os.path.join(BASE_DIR, 'templates'),
             os.path.join(BASE_DIR, 'templates/portal'),
             os.path.join(BASE_DIR, 'templates/profiles'),
+            os.path.join(BASE_DIR, 'templates/resources'),
             os.path.join(BASE_DIR, 'templates/rest_framework'),
         ],
         'APP_DIRS': True,

@@ -17,9 +17,9 @@ from portal.apps.experiments.models import AerpawExperiment, CanonicalExperiment
 from portal.apps.operations.models import CanonicalNumber, get_current_canonical_number, \
     increment_current_canonical_number
 from portal.apps.projects.models import AerpawProject
-from portal.apps.users.models import AerpawUser
 from portal.apps.resources.api.serializers import ResourceSerializerDetail
 from portal.apps.resources.models import AerpawResource
+from portal.apps.users.models import AerpawUser
 
 # constants
 EXPERIMENT_MIN_NAME_LEN = 5
@@ -347,14 +347,15 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                         experiment.resources.remove(resource)
                 # recalculate is_canonical
                 resource_class_list = list(experiment.resources.all().values_list('resource_class', flat=True))
-                experiment.is_canonical = all([item == AerpawResource.ResourceClass.CANONICAL for item in resource_class_list])
+                experiment.is_canonical = all(
+                    [item == AerpawResource.ResourceClass.CANONICAL for item in resource_class_list])
                 experiment.save()
             # End of PUT, PATCH section - All reqeust types return resources
             serializer = ResourceSerializerDetail(experiment.resources, many=True)
-            response_data = []
+            resources = []
             for u in serializer.data:
                 du = dict(u)
-                response_data.append(
+                resources.append(
                     {
                         'description': du.get('description'),
                         'is_active': du.get('is_active'),
@@ -366,6 +367,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                         'resource_type': du.get('resource_type')
                     }
                 )
+            response_data = {'experiment_resources': resources}
             return Response(response_data)
         else:
             raise PermissionDenied(
