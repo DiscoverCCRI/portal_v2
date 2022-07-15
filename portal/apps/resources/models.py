@@ -28,8 +28,8 @@ class AerpawResource(BaseModel, AuditModelMixin, models.Model):
     """
 
     class ResourceClass(models.TextChoices):
-        CANONICAL = 'canonical', _('Canonical')
-        NON_CANONICAL = 'non_canonical', _('Non Canonical')
+        ALLOW_CANONICAL = 'allow_canonical', _('Allow Canonical')
+        EXCLUDE_CANONICAL = 'exclude_canonical', _('Exclude Canonical')
 
     class ResourceMode(models.TextChoices):
         SANDBOX = 'sandbox', _('Sandbox')
@@ -54,12 +54,12 @@ class AerpawResource(BaseModel, AuditModelMixin, models.Model):
     resource_class = models.CharField(
         max_length=255,
         choices=ResourceClass.choices,
-        default=ResourceClass.CANONICAL
+        default=ResourceClass.ALLOW_CANONICAL
     )
     resource_mode = models.CharField(
         max_length=255,
         choices=ResourceMode.choices,
-        default=ResourceMode.SANDBOX
+        default=ResourceMode.TESTBED
     )
     resource_type = models.CharField(
         max_length=255,

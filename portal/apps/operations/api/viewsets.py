@@ -51,7 +51,8 @@ class CanonicalNumberViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin,
                 response_data.append(
                     {
                         'canonical_number': du.get('canonical_number'),
-                        'canonical_number_id': du.get('canonical_number_id')
+                        'canonical_number_id': du.get('canonical_number_id'),
+                        'timestamp': du.get('timestamp')
                     }
                 )
             if page:
@@ -92,7 +93,8 @@ class CanonicalNumberViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin,
                 'created_date': du.get('created_date'),
                 'is_deleted': du.get('is_deleted'),
                 'is_retired': du.get('is_retired'),
-                'modified_date': du.get('modified_date')
+                'modified_date': du.get('modified_date'),
+                'timestamp': du.get('timestamp')
             }
             return Response(response_data)
         else:
@@ -128,7 +130,7 @@ class CanonicalNumberViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin,
         """
         new_number = self.request.query_params.get('number', None)
         if new_number:
-            if request.user.is_operator():
+            if request.user.is_site_admin():
                 set_current_canonical_number(new_number)
                 response_data = {'current_canonical_number': int(get_current_canonical_number())}
                 return Response(response_data)

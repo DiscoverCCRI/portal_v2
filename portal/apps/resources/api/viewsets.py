@@ -37,7 +37,6 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
     serializer_class = ResourceSerializerDetail
 
     def get_queryset(self):
-        print(self.request.query_params)
         search = self.request.query_params.get('search', None)
         if search:
             queryset = AerpawResource.objects.filter(
@@ -120,7 +119,7 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
                     detail="description:  must be at least {0} chars long".format(RESOURCE_MIN_DESC_LEN))
             # validate hostname
             hostname = request.data.get('hostname', None)
-            if not hostname or len(hostname) < RESOURCE_MIN_HOSTNAME_LEN:
+            if hostname and len(hostname) < RESOURCE_MIN_HOSTNAME_LEN:
                 raise ValidationError(
                     detail="hostname:  must be at least {0} chars long".format(RESOURCE_MIN_HOSTNAME_LEN))
             # validate ip_address
@@ -129,12 +128,12 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
             is_active = str(request.data.get('is_active')).casefold() == 'true'
             # validate location
             location = request.data.get('location', None)
-            if not location or len(location) < RESOURCE_MIN_LOCATION_LEN:
+            if location and len(location) < RESOURCE_MIN_LOCATION_LEN:
                 raise ValidationError(
                     detail="location:  must be at least {0} chars long".format(RESOURCE_MIN_LOCATION_LEN))
             # validate name
             name = request.data.get('name', None)
-            if not name or len(name) < RESOURCE_MIN_NAME_LEN:
+            if name and len(name) < RESOURCE_MIN_NAME_LEN:
                 raise ValidationError(
                     detail="name: must be at least {0} chars long".format(RESOURCE_MIN_NAME_LEN))
             # validate ops_notes
@@ -153,7 +152,13 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
             resource_type = request.data.get('resource_type', None)
             if resource_type not in [c[0] for c in AerpawResource.ResourceType.choices]:
                 raise ValidationError(
-                    detail="resource_class: must be a valid Resource Type value")
+                    detail="resource_type: must be a valid Resource Type value")
+            # check if UAV or UGV that resource_mode == testbed
+            if resource_type in [AerpawResource.ResourceType.UAV, AerpawResource.ResourceType.UGV] and \
+                    resource_mode != AerpawResource.ResourceMode.TESTBED:
+                raise ValidationError(
+                    detail="resource_type: UAV/UGV must be mode TESTBED")
+
             # create resource
             resource = AerpawResource()
             resource.created_by = user.username
@@ -309,6 +314,11 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
                         detail="resource_class: must be a valid Resource Type value")
                 resource.resource_type = request.data.get('resource_type', None)
                 modified = True
+            # check if UAV or UGV that resource_mode == testbed
+            if resource.resource_type in [AerpawResource.ResourceType.UAV, AerpawResource.ResourceType.UGV] and \
+                    resource.resource_mode != AerpawResource.ResourceMode.TESTBED:
+                raise ValidationError(
+                    detail="resource_type: UAV/UGV must be mode TESTBED")
             # save if modified
             if modified:
                 resource.modified_by = request.user.email

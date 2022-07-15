@@ -3,6 +3,9 @@
 # environment file
 .env
 
+# canonical_number JSON
+portal/apps/operations/current-canonical-number.json
+
 # static, media and migrations directories
 portal/static
 portal/media

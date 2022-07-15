@@ -96,6 +96,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                         'description': du.get('description'),
                         'experiment_creator': du.get('experiment_creator'),
                         'experiment_id': du.get('experiment_id'),
+                        'experiment_uuid': du.get('experiment_uuid'),
                         'is_canonical': du.get('is_canonical'),
                         'is_retired': du.get('is_retired'),
                         'name': du.get('name')
@@ -117,6 +118,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - description *          - string
         - experiment_creator     - int
         - experiment_id          - int
+        - experiment_uuid        - string
         - experiment_membership  - array of user-experiment
         - experiment_state       - string
         - is_canonical           - boolean
@@ -187,6 +189,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - description            - string
         - experiment_creator     - int
         - experiment_id          - int
+        - experiment_uuid        - string
         - experiment_members     - array of user-experiment
         - experiment_state       - string
         - is_canonical           - boolean
@@ -221,6 +224,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                 'description': du.get('description'),
                 'experiment_creator': du.get('experiment_creator'),
                 'experiment_id': du.get('experiment_id'),
+                'experiment_uuid': du.get('experiment_uuid'),
                 'experiment_members': experiment_membership,
                 'experiment_state': du.get('experiment_state'),
                 'is_canonical': du.get('is_canonical'),
@@ -249,9 +253,9 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - user is_experiment_creator OR
         - user is_experiment_member
         """
-        experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
-        if not experiment.is_deleted and request.user is experiment.experiment_creator or \
-                request.user in experiment.experiment_membership:
+        experiment = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if not experiment.is_deleted and \
+                (request.user is experiment.experiment_creator or experiment.is_member(request.user)):
             modified = False
             # check for description
             if request.data.get('description', None):
@@ -329,26 +333,72 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         if experiment.is_creator(request.user) or experiment.is_member(request.user):
             if str(request.method).casefold() in ['put', 'patch']:
                 resources = request.data.get('experiment_resources')
-                if isinstance(resources, list) and all([isinstance(item, int) for item in resources]):
+                # validate array of resources
+                print(resources)
+                resource_ids = [item.get('resource_id') for item in resources]
+                resource_node_uhds = [item.get('node_uhd') for item in resources]
+                if isinstance(resource_ids, list) and all([isinstance(item, int) for item in resource_ids]) and \
+                        all([item in [c[0] for c in CanonicalExperimentResource.NodeUhd.choices] for item in
+                             resource_node_uhds]):
+                    print("passed test")
                     resources_orig = list(set(experiment.resources.all().values_list('id', flat=True)))
-                    resources_added = list(set(resources).difference(set(resources_orig)))
-                    resources_removed = list(set(resources_orig).difference(set(resources)))
+                    resources_added = list(set(resource_ids).difference(set(resources_orig)))
+                    resources_removed = list(set(resources_orig).difference(set(resource_ids)))
                     # TODO: canonical-experiment-resource logic
                     for pk in resources_added:
                         if AerpawResource.objects.filter(pk=pk).exists():
                             resource = AerpawResource.objects.get(pk=pk)
-                            # add resource to project
-                            experiment.resources.add(resource)
-                            # create canonical-experiment-resource if resource is_canonical
+                            if not experiment.is_canonical or \
+                                    (experiment.is_canonical and
+                                     resource.resource_class == AerpawResource.ResourceClass.ALLOW_CANONICAL):
+                                # add resource to project
+                                experiment.resources.add(resource)
+                                # create canonical-experiment-resource if resource is_canonical
+                                canonical_experiment_resource = CanonicalExperimentResource()
+                                node_uhd = next(item.get('node_uhd') for item in resources if item['resource_id'] == pk)
+                                canonical_experiment_resource.experiment = experiment
+                                canonical_experiment_resource.resource = resource
+                                canonical_experiment_resource.node_uhd = node_uhd
+                                if resource.resource_type == AerpawResource.ResourceType.AFRN:
+                                    canonical_experiment_resource.node_type = CanonicalExperimentResource.NodeType.AFRN
+                                    canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE
+                                else:
+                                    canonical_experiment_resource.node_type = CanonicalExperimentResource.NodeType.APRN
+                                    if resource.resource_type == AerpawResource.ResourceType.UAV:
+                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_UAV
+                                    if resource.resource_type == AerpawResource.ResourceType.UGV:
+                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_UGV
+                                    if resource.resource_type == AerpawResource.ResourceType.OTHER:
+                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_OTHER
+                                    if resource.resource_type == AerpawResource.ResourceType.THREE_PBBE:
+                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE
+                                canonical_experiment_resource.save()
+                            else:
+                                raise ValidationError(
+                                    detail="ValidationError: ALLOW_CANONICAL /experiments/{0}/resources".format(
+                                        kwargs.get('pk')))
                     for pk in resources_removed:
                         resource = AerpawResource.objects.get(pk=pk)
                         # remove/delete canonical-experiment-resource if resource is_canonical
-                        # add resource to project
+                        canonical_experiment_resource = CanonicalExperimentResource.objects.filter(
+                            resource__id=pk,
+                            experiment__id=experiment.id
+                        )
+                        canonical_experiment_resource.delete()
+                        # remove resource from project
                         experiment.resources.remove(resource)
-                # recalculate is_canonical
-                resource_class_list = list(experiment.resources.all().values_list('resource_class', flat=True))
-                experiment.is_canonical = all(
-                    [item == AerpawResource.ResourceClass.CANONICAL for item in resource_class_list])
+                        experiment.save()
+                    # calculate experiment node numbers
+                    cers = CanonicalExperimentResource.objects.filter(experiment__id=experiment.id).order_by('resource_id')
+                    enn = 1
+                    for cer in cers:
+                        cer.experiment_node_number = enn
+                        cer.save()
+                        enn += 1
+                else:
+                    raise ValidationError(
+                        detail="ValidationError: invalid resource_id or node_uhd /experiments/{0}/resources".format(
+                            kwargs.get('pk')))
                 experiment.save()
             # End of PUT, PATCH section - All reqeust types return resources
             serializer = ResourceSerializerDetail(experiment.resources, many=True)
@@ -371,7 +421,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
             return Response(response_data)
         else:
             raise PermissionDenied(
-                detail="PermissionDenied: unable to GET,PUT,PATCH /experiments/{0}/membership".format(kwargs.get('pk')))
+                detail="PermissionDenied: unable to GET,PUT,PATCH /experiments/{0}/resources".format(kwargs.get('pk')))
 
     @action(detail=True, methods=['get', 'put', 'patch'])
     def membership(self, request, *args, **kwargs):
@@ -820,7 +870,7 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
         """
         canonical_experiment_resource = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
         if request.user.is_operator():
-            serializer = ExperimentSessionSerializer(canonical_experiment_resource)
+            serializer = CanonicalExperimentResourceSerializer(canonical_experiment_resource)
             du = dict(serializer.data)
             response_data = {
                 'canonical_experiment_resource_id': du.get('canonical_experiment_resource_id'),

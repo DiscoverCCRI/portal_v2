@@ -62,7 +62,7 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
         choices=ExperimentState.choices,
         default=ExperimentState.SAVED
     )
-    is_canonical = models.BooleanField(default=False)
+    is_canonical = models.BooleanField(default=True)
     is_deleted = models.BooleanField(default=False)
     is_retired = models.BooleanField(default=False)
     name = models.CharField(max_length=255, blank=False, null=False)

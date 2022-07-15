@@ -14,36 +14,38 @@ class UserExperimentSerializer(serializers.ModelSerializer):
 
 
 class ExperimentSerializerList(serializers.ModelSerializer):
-    created_date = serializers.DateTimeField(source='created')
+    created_date = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
     experiment_id = serializers.IntegerField(source='id', read_only=True)
+    experiment_uuid = serializers.CharField(source='uuid')
 
     class Meta:
         model = AerpawExperiment
         fields = ['canonical_number', 'created_date', 'description', 'experiment_creator', 'experiment_id',
-                  'experiment_state', 'is_canonical', 'is_retired', 'name']
+                  'experiment_uuid', 'experiment_state', 'is_canonical', 'is_retired', 'name']
 
 
 class ExperimentSerializerDetail(serializers.ModelSerializer):
     canonical_number = serializers.IntegerField(source='canonical_number.canonical_number')
-    created_date = serializers.DateTimeField(source='created')
+    created_date = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
     experiment_id = serializers.IntegerField(source='id', read_only=True)
+    experiment_uuid = serializers.CharField(source='uuid')
     last_modified_by = serializers.CharField(source='modified_by')
-    modified_date = serializers.DateTimeField(source='modified')
+    modified_date = serializers.DateTimeField(source='modified', format="%Y-%m-%d %H:%M:%S %z")
     project_id = serializers.IntegerField(source='project.id')
     experiment_membership = UserExperimentSerializer(source='userexperiment_set', many=True)
 
     class Meta:
         model = AerpawExperiment
         fields = ['canonical_number', 'created_date', 'description', 'experiment_creator', 'experiment_id',
-                  'experiment_membership', 'experiment_state', 'is_canonical', 'is_retired', 'last_modified_by',
-                  'modified_date', 'name', 'project_id', 'resources']
+                  'experiment_uuid', 'experiment_membership', 'experiment_state', 'is_canonical', 'is_retired',
+                  'last_modified_by', 'modified_date', 'name', 'project_id', 'resources']
 
 
 class ExperimentSessionSerializer(serializers.ModelSerializer):
     ended_by = serializers.IntegerField(source='ended_by.id')
     experiment_id = serializers.IntegerField(source='experiment.id')
     session_id = serializers.IntegerField(source='id')
-    start_date_time = serializers.DateTimeField(source='created')
+    start_date_time = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
     started_by = serializers.IntegerField(source='started_by.id')
 
     class Meta:
