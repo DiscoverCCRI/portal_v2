@@ -34,9 +34,9 @@
     {% if user.is_authenticated %}
         <div class="container w-85">
             {% if user_data.is_active %}
-                <h1>{{ user_data.display_name }} <a class="text-success" style="font-size: medium">(Active)</a></h1>
+                <h1>{{ user_data.display_name }} <em class="text-success" style="font-size: medium">(Active)</em></h1>
             {% else %}
-                <h1>{{ user_data.display_name }} <a class="text-danger" style="font-size: medium">(Inactive)</a></h1>
+                <h1>{{ user_data.display_name }} <em class="text-danger" style="font-size: medium">(Inactive)</em></h1>
             {% endif %}
             <table class="table table-striped table-bordered my-4">
                 <tbody>
@@ -74,7 +74,7 @@
                                 <strong>{{ role }}</strong><br>
                             {% endfor %}
                             {% csrf_token %}
-                            <input class="message-btn btn btn-success"
+                            <input class="message-btn btn btn-success disabled"
                                    type="submit"
                                    name="request_role"
                                    value="Request Role"
@@ -158,12 +158,12 @@
             <form method="POST" class="post-form">
                 <h3>Public Keys
                     {% csrf_token %}
-                    <input class="message-btn btn btn-success"
+                    <input class="message-btn btn btn-success disabled"
                            type="submit"
                            name="generate_key"
                            value="Generate Key Pair"
                            style="float: right; margin-left: 10px">
-                    <input class="message-btn btn btn-success"
+                    <input class="message-btn btn btn-success disabled"
                            type="submit"
                            name="upload_key"
                            value="Upload Public Key"

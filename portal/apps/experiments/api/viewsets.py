@@ -389,7 +389,8 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                         experiment.resources.remove(resource)
                         experiment.save()
                     # calculate experiment node numbers
-                    cers = CanonicalExperimentResource.objects.filter(experiment__id=experiment.id).order_by('resource_id')
+                    cers = CanonicalExperimentResource.objects.filter(experiment__id=experiment.id).order_by(
+                        'resource_id')
                     enn = 1
                     for cer in cers:
                         cer.experiment_node_number = enn

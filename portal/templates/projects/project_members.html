@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static django_bootstrap5 projects_tags %}
+
+{% block title %}
+    Projects
+{% endblock %}
+
+{% block content %}
+    {% block extrastyle %}
+        {{ form.media }}
+        <style>
+            .selector h2 {
+                margin: 0;
+                padding: 8px;
+                font-weight: 400;
+                font-size: 15px;
+                text-align: left;
+                background: #343a40;
+                color: white;
+            }
+        </style>
+    {% endblock extrastyle %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
+    {% if user.is_authenticated %}
+        {% if is_project_creator or is_project_owner %}
+            <div class="container w-85">
+                <div class="d-flex flex-row align-items-center justify-content-between">
+                    <h2>{{ project_id|id_to_project_name }}
+                        <em class="text-primary" style="font-size: large">(edit members)</em></h2>
+                    <div>
+                        <button class="btn btn-success mr-2" type="submit" form="create-project" value="save">Save
+                        </button>
+                        <button class="btn btn-secondary mr-2" value="cancel">
+                            <a href="{% url 'project_detail' project_id=project_id %}" class="unlink">Back</a>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <form id="create-project" method="POST" class="post-form">
+                        {% csrf_token %}
+                        {{ form.project_members }}
+                    </form>
+                </div>
+            </div>
+        {% else %}
+            You are not able to edit this project
+        {% endif %}
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">
+            <button class="message-btn btn btn-success">Login</button>
+        </a>
+    {% endif %}
+{% endblock %}

@@ -79,11 +79,21 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
             response_data = []
             for u in serializer.data:
                 du = dict(u)
+                # add project membership
+                project = AerpawProject.objects.get(pk=du.get('project_id'))
+                is_project_creator = project.is_creator(request.user)
+                is_project_member = project.is_member(request.user)
+                is_project_owner = project.is_owner(request.user)
                 response_data.append(
                     {
                         'created_date': du.get('created_date'),
                         'description': du.get('description'),
                         'is_public': du.get('is_public'),
+                        'membership': {
+                            'is_project_creator': is_project_creator,
+                            'is_project_member': is_project_member,
+                            'is_project_owner': is_project_owner
+                        },
                         'name': du.get('name'),
                         'project_creator': du.get('project_creator'),
                         'project_id': du.get('project_id')
@@ -180,11 +190,20 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                     project_members.append(person)
                 if p.get('project_role') == UserProject.RoleType.PROJECT_OWNER:
                     project_owners.append(person)
+            # add project membership
+            is_project_creator = project.is_creator(request.user)
+            is_project_member = project.is_member(request.user)
+            is_project_owner = project.is_owner(request.user)
             response_data = {
                 'created_date': str(du.get('created_date')),
                 'description': du.get('description'),
                 'is_public': du.get('is_public'),
                 'last_modified_by': AerpawUser.objects.get(username=du.get('last_modified_by')).id,
+                'membership': {
+                    'is_project_creator': is_project_creator,
+                    'is_project_member': is_project_member,
+                    'is_project_owner': is_project_owner
+                },
                 'modified_date': str(du.get('modified_date')),
                 'name': du.get('name'),
                 'project_creator': du.get('project_creator'),
@@ -199,14 +218,25 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
             if project.is_public:
                 serializer = ProjectSerializerDetail(project)
                 du = dict(serializer.data)
+                # add project membership
+                is_project_creator = project.is_creator(request.user)
+                is_project_member = project.is_member(request.user)
+                is_project_owner = project.is_owner(request.user)
                 response_data = {
                     'created_date': du.get('created_date'),
                     'description': du.get('description'),
                     'is_public': du.get('is_public'),
+                    'membership': {
+                        'is_project_creator': is_project_creator,
+                        'is_project_member': is_project_member,
+                        'is_project_owner': is_project_owner
+                    },
                     'name': du.get('name'),
                     'project_creator': du.get('project_creator'),
                     'project_id': du.get('project_id')
                 }
+                if project.is_deleted:
+                    response_data['is_deleted'] = du.get('is_deleted')
             else:
                 response_data = {}
             return Response(response_data)
@@ -296,6 +326,7 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         - description            - string
         - experiment_creator     - user_ID
         - experiment_id          - int
+        - experiment_uuid        - string
         - experiment_state       - string
         - is_canonical           - boolean
         - is_retired             - boolean
@@ -322,6 +353,7 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                         'description': du.get('description'),
                         'experiment_creator': du.get('experiment_creator'),
                         'experiment_id': du.get('experiment_id'),
+                        'experiment_uuid': du.get('experiment_uuid'),
                         'is_canonical': du.get('is_canonical'),
                         'is_retired': du.get('is_retired'),
                         'name': du.get('name')
@@ -345,53 +377,64 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         """
         project = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
         if project.is_creator(request.user) or project.is_owner(request.user):
-            if str(request.method).casefold() in ['put', 'patch']:
-                project_members = request.data.get('project_members')
-                project_owners = request.data.get('project_owners')
-                if isinstance(project_members, list) and all([isinstance(item, int) for item in project_members]):
-                    project_members_orig = UserProject.objects.filter(
-                        project__id=project.id,
-                        project_role=UserProject.RoleType.PROJECT_MEMBER
-                    ).values_list('user__id', flat=True)
-                    project_members_added = list(set(project_members).difference(set(project_members_orig)))
-                    project_members_removed = list(set(project_members_orig).difference(set(project_members)))
-                    for pk in project_members_added:
-                        if AerpawUser.objects.filter(pk=pk).exists():
-                            user = AerpawUser.objects.get(pk=pk)
-                            # experimenter or pi roles only
-                            if user.is_experimenter() or user.is_pi():
-                                membership = UserProject()
-                                membership.granted_by = request.user
-                                membership.project = project
-                                membership.project_role = UserProject.RoleType.PROJECT_MEMBER
-                                membership.user = user
-                                membership.save()
-                    for pk in project_members_removed:
-                        membership = UserProject.objects.get(
-                            project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_MEMBER)
-                        membership.delete()
-                if isinstance(project_owners, list) and all([isinstance(item, int) for item in project_owners]):
-                    project_owners_orig = UserProject.objects.filter(
-                        project__id=project.id,
-                        project_role=UserProject.RoleType.PROJECT_OWNER
-                    ).values_list('user__id', flat=True)
-                    project_owners_added = list(set(project_owners).difference(set(project_owners_orig)))
-                    project_owners_removed = list(set(project_owners_orig).difference(set(project_owners)))
-                    for pk in project_owners_added:
-                        if AerpawUser.objects.filter(pk=pk).exists():
-                            user = AerpawUser.objects.get(pk=pk)
-                            # experimenter or pi roles only
-                            if user.is_experimenter() or user.is_pi():
-                                membership = UserProject()
-                                membership.granted_by = request.user
-                                membership.project = project
-                                membership.project_role = UserProject.RoleType.PROJECT_OWNER
-                                membership.user = user
-                                membership.save()
-                    for pk in project_owners_removed:
-                        membership = UserProject.objects.get(
-                            project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_OWNER)
-                        membership.delete()
+            print(request.data)
+            if str(request.method).casefold() in ['put', 'patch', 'post']:
+                if request.data.get('project_members'):
+                    try:
+                        project_members = request.data.getlist('project_members')
+                    except Exception as exc:
+                        print(exc)
+                        project_members = request.data.get('project_members')
+                    if isinstance(project_members, list) and all([isinstance(item, int) for item in project_members]):
+                        project_members_orig = UserProject.objects.filter(
+                            project__id=project.id,
+                            project_role=UserProject.RoleType.PROJECT_MEMBER
+                        ).values_list('user__id', flat=True)
+                        project_members_added = list(set(project_members).difference(set(project_members_orig)))
+                        project_members_removed = list(set(project_members_orig).difference(set(project_members)))
+                        for pk in project_members_added:
+                            if AerpawUser.objects.filter(pk=pk).exists():
+                                user = AerpawUser.objects.get(pk=pk)
+                                # experimenter or pi roles only
+                                if user.is_experimenter() or user.is_pi():
+                                    membership = UserProject()
+                                    membership.granted_by = request.user
+                                    membership.project = project
+                                    membership.project_role = UserProject.RoleType.PROJECT_MEMBER
+                                    membership.user = user
+                                    membership.save()
+                        for pk in project_members_removed:
+                            membership = UserProject.objects.get(
+                                project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_MEMBER)
+                            membership.delete()
+                if request.data.get('project_owners'):
+                    try:
+                        project_owners = request.data.getlist('project_owners')
+                    except Exception as exc:
+                        print(exc)
+                        project_owners = request.data.get('project_owners')
+                    if isinstance(project_owners, list) and all([isinstance(item, int) for item in project_owners]):
+                        project_owners_orig = UserProject.objects.filter(
+                            project__id=project.id,
+                            project_role=UserProject.RoleType.PROJECT_OWNER
+                        ).values_list('user__id', flat=True)
+                        project_owners_added = list(set(project_owners).difference(set(project_owners_orig)))
+                        project_owners_removed = list(set(project_owners_orig).difference(set(project_owners)))
+                        for pk in project_owners_added:
+                            if AerpawUser.objects.filter(pk=pk).exists():
+                                user = AerpawUser.objects.get(pk=pk)
+                                # experimenter or pi roles only
+                                if user.is_experimenter() or user.is_pi():
+                                    membership = UserProject()
+                                    membership.granted_by = request.user
+                                    membership.project = project
+                                    membership.project_role = UserProject.RoleType.PROJECT_OWNER
+                                    membership.user = user
+                                    membership.save()
+                        for pk in project_owners_removed:
+                            membership = UserProject.objects.get(
+                                project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_OWNER)
+                            membership.delete()
             # End of PUT, PATCH section - All reqeust types return membership
             serializer = ProjectSerializerDetail(project)
             du = dict(serializer.data)

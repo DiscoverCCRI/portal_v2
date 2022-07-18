@@ -14,7 +14,7 @@ class UserExperimentSerializer(serializers.ModelSerializer):
 
 
 class ExperimentSerializerList(serializers.ModelSerializer):
-    created_date = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
+    created_date = serializers.DateTimeField(source='created')
     experiment_id = serializers.IntegerField(source='id', read_only=True)
     experiment_uuid = serializers.CharField(source='uuid')
 
@@ -26,11 +26,11 @@ class ExperimentSerializerList(serializers.ModelSerializer):
 
 class ExperimentSerializerDetail(serializers.ModelSerializer):
     canonical_number = serializers.IntegerField(source='canonical_number.canonical_number')
-    created_date = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
+    created_date = serializers.DateTimeField(source='created')
     experiment_id = serializers.IntegerField(source='id', read_only=True)
     experiment_uuid = serializers.CharField(source='uuid')
     last_modified_by = serializers.CharField(source='modified_by')
-    modified_date = serializers.DateTimeField(source='modified', format="%Y-%m-%d %H:%M:%S %z")
+    modified_date = serializers.DateTimeField(source='modified')
     project_id = serializers.IntegerField(source='project.id')
     experiment_membership = UserExperimentSerializer(source='userexperiment_set', many=True)
 
@@ -45,7 +45,7 @@ class ExperimentSessionSerializer(serializers.ModelSerializer):
     ended_by = serializers.IntegerField(source='ended_by.id')
     experiment_id = serializers.IntegerField(source='experiment.id')
     session_id = serializers.IntegerField(source='id')
-    start_date_time = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
+    start_date_time = serializers.DateTimeField(source='created')
     started_by = serializers.IntegerField(source='started_by.id')
 
     class Meta:

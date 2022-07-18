@@ -2,7 +2,7 @@
 {% load static %}
 
 {% block title %}
-    Resources
+    Projects
 {% endblock %}
 
 {% block content %}
@@ -10,20 +10,20 @@
         <div class="text-danger" style="font-size: large">{{ message }}</div>
     {% endif %}
     {% if user.is_authenticated %}
-        {% if user.is_operator %}
+        {% if is_project_creator or is_project_owner %}
             <div class="container w-85">
-                <h2>Create Resource</h2>
-                <form id="create-resource" method="POST" class="post-form">
+                <h2>Edit Project</h2>
+                <form id="create-project" method="POST" class="post-form">
                     {% csrf_token %}
                     {{ form.as_p }}
                 </form>
-                <button class="btn btn-success mr-2" type="submit" form="create-resource" value="save">Save</button>
+                <button class="btn btn-success mr-2" type="submit" form="create-project" value="save">Save</button>
                 <button class="btn btn-secondary mr-2" value="cancel">
-                    <a href="{% url 'resource_list' %}" class="unlink">Back</a>
+                    <a href="{% url 'project_detail' project_id=project_id %}" class="unlink">Back</a>
                 </button>
             </div>
         {% else %}
-            You are not able to create a resource
+            You are not able to edit this project
         {% endif %}
     {% else %}
         <p>You are not logged in</p>

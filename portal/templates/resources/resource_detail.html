@@ -13,9 +13,9 @@
         <div class="container w-85">
             <div class="d-flex flex-row align-items-center justify-content-between">
                 {% if resource.is_active %}
-                    <h2>{{ resource.name }} <a class="text-success" style="font-size: medium">(Active)</a></h2>
+                    <h2>{{ resource.name }} <em class="text-success" style="font-size: medium">(Active)</em></h2>
                 {% else %}
-                    <h2>{{ resource.name }} <a class="text-danger" style="font-size: medium">(Inactive)</a></h2>
+                    <h2>{{ resource.name }} <em class="text-danger" style="font-size: medium">(Inactive)</em></h2>
                 {% endif %}
                 {% if resource.is_deleted %}
                     <a class="text-danger" style="font-size: medium"><strong>(DELETED)</strong></a>
@@ -82,15 +82,15 @@
                 <tbody>
                 <tr style="font-size: small">
                     <td style="width: 50%">
-                        <strong>created date</strong>: {{ resource.created_date }}
+                        <strong>created date</strong>: {{ resource.created_date|str_to_datetime }}
                     </td>
                     <td style="width: 50%">
-                        <strong>modified date</strong>: {{ resource.modified_date }}
+                        <strong>last modified date</strong>: {{ resource.modified_date|str_to_datetime }}
                     </td>
                 </tr>
                 <tr style="font-size: small">
                     <td style="width: 50%">
-                        <strong>resource creator</strong>: {{ resource.resource_creator|id_to_username }}
+                        <strong>created by</strong>: {{ resource.resource_creator|id_to_username }}
                     </td>
                     <td style="width: 50%">
                         <strong>last modified by</strong>: {{ resource.last_modified_by|id_to_username }}

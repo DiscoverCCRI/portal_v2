@@ -30,10 +30,10 @@ from portal.apps.users.api.viewsets import UserViewSet
 # Routers provide an easy way of automatically determining the URL conf.
 # Ordering is important for overloaded API slugs with differing ViewSet definitions
 router = routers.DefaultRouter(trailing_slash=False)
-router.register(r'canonical-experiment-number', CanonicalNumberViewSet, basename='canonical-experiment-number')
 router.register(r'canonical-experiment-resource', CanonicalExperimentResourceViewSet,
                 basename='canonical-experiment-resource')
 router.register(r'experiments', ExperimentViewSet, basename='experiments')
+router.register(r'p-canonical-experiment-number', CanonicalNumberViewSet, basename='canonical-experiment-number')
 router.register(r'projects', ProjectViewSet, basename='projects')
 router.register(r'resources', ResourceViewSet, basename='resources')
 router.register(r'sessions', ExperimentSessionViewSet, basename='sessions')
@@ -54,5 +54,6 @@ urlpatterns = [
     path('auth/', include('django.contrib.auth.urls')),
     path('oidc/', include('mozilla_django_oidc.urls')),
     path('profile/', include('portal.apps.profiles.urls')),  # profiles app
+    path('projects/', include('portal.apps.projects.urls')),  # projects app
     path('resources/', include('portal.apps.resources.urls')),  # resources app
 ]

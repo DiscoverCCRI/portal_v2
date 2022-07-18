@@ -13,8 +13,8 @@ class CanonicalNumberSerializerList(serializers.ModelSerializer):
 
 class CanonicalNumberSerializerDetail(serializers.ModelSerializer):
     canonical_number_id = serializers.IntegerField(source='id', read_only=True)
-    created_date = serializers.DateTimeField(source='created', format="%Y-%m-%d %H:%M:%S %z")
-    modified_date = serializers.DateTimeField(source='modified', format="%Y-%m-%d %H:%M:%S %z")
+    created_date = serializers.DateTimeField(source='created')
+    modified_date = serializers.DateTimeField(source='modified')
 
     class Meta:
         model = CanonicalNumber

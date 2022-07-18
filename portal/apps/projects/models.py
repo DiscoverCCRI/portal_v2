@@ -39,6 +39,13 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
         through='UserProject',
         through_fields=('project', 'user')
     )
+    # project_owners = models.ManyToManyField(
+    #     AerpawUser,
+    #     related_name='project_owners',
+    #     through='UserProject',
+    #     through_fields=('project', 'user'),
+    #     limit_choices_to={'project_role': 'project_owner'}
+    # )
     uuid = models.CharField(max_length=255, primary_key=False, editable=False)
 
     class Meta:
@@ -57,6 +64,18 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
     def is_owner(self, user: AerpawUser) -> bool:
         return UserProject.objects.filter(
             user=user, project=self, project_role=UserProject.RoleType.PROJECT_OWNER).exists()
+
+    def project_members(self) -> [AerpawUser]:
+        return AerpawUser.objects.filter(
+            id__in=UserProject.objects.filter(
+                project=self, project_role=UserProject.RoleType.PROJECT_MEMBER).values_list('user_id', flat=True)
+        ).order_by('display_name')
+
+    def project_owners(self) -> [AerpawUser]:
+        return AerpawUser.objects.filter(
+            id__in=UserProject.objects.filter(
+                project=self, project_role=UserProject.RoleType.PROJECT_OWNER).values_list('user_id', flat=True)
+        ).order_by('display_name')
 
 
 class UserProject(BaseModel, models.Model):
