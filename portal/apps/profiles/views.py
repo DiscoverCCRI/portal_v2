@@ -1,9 +1,12 @@
+import os
+
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
 
 from portal.apps.users.api.viewsets import UserViewSet
 from portal.apps.users.oidc_users import get_tokens_for_user, refresh_access_token_for_user
+from portal.server.settings import DEBUG
 
 
 @csrf_exempt
@@ -16,6 +19,7 @@ def profile(request):
     user = request.user
     user_data = UserViewSet()
     message = None
+    print(os.getenv('DJANGO_DEBUG'))
     if request.method == 'POST':
         try:
             if request.POST.get('display_name'):
@@ -33,5 +37,6 @@ def profile(request):
                       'user': user,
                       'user_data': user_data.retrieve(request=request, pk=request.user.id).data,
                       'user_tokens': user_data.tokens(request=request, pk=request.user.id).data,
-                      'message': message
+                      'message': message,
+                      'debug': DEBUG
                   })

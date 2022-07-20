@@ -9,7 +9,7 @@
     {% if message %}
         <div class="text-danger" style="font-size: large">{{ message }}</div>
     {% endif %}
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and project %}
         <div class="container w-85">
             <div class="d-flex flex-row align-items-center justify-content-between">
                 {% if project.is_public %}
@@ -24,13 +24,13 @@
                     <div>
                         <form action="{% url 'project_detail' project_id=project.project_id %}" method="POST">
                             {% csrf_token %}
-                            {% if project.membership.is_project_creator %}
+                            {% if project.membership.is_project_creator or project.membership.is_project_owner %}
                                 <button class="btn btn-success mr-2">
                                     <a href="{% url 'project_edit' project_id=project.project_id %}"
                                        class="unlink">Edit</a>
                                 </button>
                             {% endif %}
-                            {% if project.membership.is_project_creator or project.membership.is_project_owner %}
+                            {% if project.membership.is_project_creator %}
                                 <input type="hidden" name="delete-project" value="true">
                                 <button class="btn btn-danger mr-2" type="submit">
                                     <a onclick="return confirm('Are you sure you want to delete this project?')">Delete</a>
@@ -99,17 +99,19 @@
                             Experiments
                             {% if not project.is_deleted %}
                                 {% if project.membership.is_project_creator or project.membership.is_project_owner or project.membership.is_project_member %}
-                                    <button class="btn btn-secondary mr-2 disabled" style="float: right">
-                                        <a href="{% url 'project_edit' project_id=project.project_id %}"
-                                           class="unlink">Update</a>
+                                    <button class="btn btn-secondary mr-2" style="float: right">
+                                        <a href="{% url 'experiment_create' %}?project_id={{ project.project_id }}"
+                                           class="unlink">Create</a>
                                     </button>
                                 {% endif %}
                             {% endif %}
                         </td>
                         <td style="width: 75%">
                             {% for experiment in experiments %}
-                                <strong>{{ experiment.name }}</strong>
-                                {{ experiment.description }}<br>
+                                <strong><a href="{% url 'experiment_detail' experiment_id=experiment.experiment_id %}">
+                                    {{ experiment.name }}
+                                </a></strong>
+                                - {{ experiment.description }}<br>
                                 - <em class="small">uuid: {{ experiment.experiment_uuid }}</em><br>
                                 - <em class="small">created {{ experiment.created_date|str_to_datetime }}
                                 by: {{ experiment.experiment_creator|id_to_username }}</em><br>
@@ -144,8 +146,13 @@
                 </tbody>
             </table>
         </div>
+        {% if debug %}
+            <hr>
+            <pre>{{ project|pprint }}</pre>
+            <pre>{{ experiments|pprint }}</pre>
+        {% endif %}
     {% else %}
-        <p>You are not logged in</p>
+        <p>You are not allowed to view this project or are not logged in</p>
         <a href="{% url 'login' %}">
             <button class="message-btn btn btn-success">Login</button>
         </a>

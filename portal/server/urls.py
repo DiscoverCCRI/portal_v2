@@ -53,6 +53,7 @@ urlpatterns = [
     path('api/token/verify/', TokenVerifyView.as_view(), name='token_verify'),
     path('auth/', include('django.contrib.auth.urls')),
     path('oidc/', include('mozilla_django_oidc.urls')),
+    path('experiments/', include('portal.apps.experiments.urls')),  # experiments app
     path('profile/', include('portal.apps.profiles.urls')),  # profiles app
     path('projects/', include('portal.apps.projects.urls')),  # projects app
     path('resources/', include('portal.apps.resources.urls')),  # resources app

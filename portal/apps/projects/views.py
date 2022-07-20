@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from portal.apps.projects.api.viewsets import ProjectViewSet
 from portal.apps.projects.forms import ProjectCreateForm, ProjectMembershipForm
 from portal.apps.projects.models import AerpawProject
-from portal.server.settings import REST_FRAMEWORK
+from portal.server.settings import DEBUG, REST_FRAMEWORK
 
 
 @csrf_exempt
@@ -38,7 +38,8 @@ def project_list(request):
         min_range = 0
         max_range = 0
         if projects.data:
-            prev_url = projects.data.get('previous', None)
+            projects = dict(projects.data)
+            prev_url = projects.get('previous', None)
             if prev_url:
                 prev_dict = parse_qs(urlparse(prev_url).query)
                 try:
@@ -46,7 +47,7 @@ def project_list(request):
                 except Exception as exc:
                     print(exc)
                     prev_page = 1
-            next_url = projects.data.get('next', None)
+            next_url = projects.get('next', None)
             if next_url:
                 next_dict = parse_qs(urlparse(next_url).query)
                 try:
@@ -54,12 +55,11 @@ def project_list(request):
                 except Exception as exc:
                     print(exc)
                     next_page = 1
-            count = int(projects.data.get('count'))
+            count = int(projects.get('count'))
             min_range = int(current_page - 1) * int(REST_FRAMEWORK['PAGE_SIZE']) + 1
             max_range = int(current_page - 1) * int(REST_FRAMEWORK['PAGE_SIZE']) + int(REST_FRAMEWORK['PAGE_SIZE'])
             if max_range > count:
                 max_range = count
-
         item_range = '{0} - {1}'.format(str(min_range), str(max_range))
     except Exception as exc:
         message = exc
@@ -79,7 +79,8 @@ def project_list(request):
                       'next_page': next_page,
                       'prev_page': prev_page,
                       'search': search_term,
-                      'count': count
+                      'count': count,
+                      'debug': DEBUG
                   })
 
 
@@ -109,7 +110,8 @@ def project_detail(request, project_id):
                       'user': request.user,
                       'project': project,
                       'experiments': experiments,
-                      'message': message
+                      'message': message,
+                      'debug': DEBUG
                   })
 
 
@@ -187,8 +189,9 @@ def project_members(request, project_id):
     message = None
     is_project_creator = False
     is_project_owner = False
+    project = get_object_or_404(AerpawProject, id=project_id)
     if request.method == "POST":
-        form = ProjectMembershipForm(request.POST)
+        form = ProjectMembershipForm(request.POST, instance=project)
         if form.is_valid():
             try:
                 request.query_params = QueryDict('', mutable=True)
@@ -200,7 +203,6 @@ def project_members(request, project_id):
             except Exception as exc:
                 message = exc
     else:
-        project = get_object_or_404(AerpawProject, id=project_id)
         is_project_creator = project.is_creator(request.user)
         is_project_owner = project.is_owner(request.user)
         initial_dict = {
@@ -224,8 +226,9 @@ def project_owners(request, project_id):
     message = None
     is_project_creator = False
     is_project_owner = False
+    project = get_object_or_404(AerpawProject, id=project_id)
     if request.method == "POST":
-        form = ProjectMembershipForm(request.POST)
+        form = ProjectMembershipForm(request.POST, instance=project)
         if form.is_valid():
             try:
                 request.query_params = QueryDict('', mutable=True)
@@ -237,7 +240,6 @@ def project_owners(request, project_id):
             except Exception as exc:
                 message = exc
     else:
-        project = get_object_or_404(AerpawProject, id=project_id)
         is_project_creator = project.is_creator(request.user)
         is_project_owner = project.is_owner(request.user)
         initial_dict = {

@@ -179,6 +179,11 @@
                 </tbody>
             </table>
         </div>
+        {% if debug %}
+            <hr>
+            <pre>{{ user_data|pprint }}</pre>
+            <pre>{{ user_tokens|pprint }}</pre>
+        {% endif %}
     {% else %}
         <p>You are not logged in</p>
         <a href="{% url 'login' %}">

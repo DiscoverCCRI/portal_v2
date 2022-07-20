@@ -8,7 +8,7 @@ from django.views.decorators.csrf import csrf_exempt
 from portal.apps.resources.api.viewsets import ResourceViewSet
 from portal.apps.resources.forms import ResourceCreateForm
 from portal.apps.resources.models import AerpawResource
-from portal.server.settings import REST_FRAMEWORK
+from portal.server.settings import DEBUG, REST_FRAMEWORK
 
 
 @csrf_exempt
@@ -37,7 +37,8 @@ def resource_list(request):
         min_range = 0
         max_range = 0
         if resources.data:
-            prev_url = resources.data.get('previous', None)
+            resources = dict(resources.data)
+            prev_url = resources.get('previous', None)
             if prev_url:
                 prev_dict = parse_qs(urlparse(prev_url).query)
                 try:
@@ -45,7 +46,7 @@ def resource_list(request):
                 except Exception as exc:
                     print(exc)
                     prev_page = 1
-            next_url = resources.data.get('next', None)
+            next_url = resources.get('next', None)
             if next_url:
                 next_dict = parse_qs(urlparse(next_url).query)
                 try:
@@ -53,7 +54,7 @@ def resource_list(request):
                 except Exception as exc:
                     print(exc)
                     next_page = 1
-            count = int(resources.data.get('count'))
+            count = int(resources.get('count'))
             min_range = int(current_page - 1) * int(REST_FRAMEWORK['PAGE_SIZE']) + 1
             max_range = int(current_page - 1) * int(REST_FRAMEWORK['PAGE_SIZE']) + int(REST_FRAMEWORK['PAGE_SIZE'])
             if max_range > count:
@@ -78,7 +79,8 @@ def resource_list(request):
                       'next_page': next_page,
                       'prev_page': prev_page,
                       'search': search_term,
-                      'count': count
+                      'count': count,
+                      'debug': DEBUG
                   })
 
 
@@ -101,7 +103,8 @@ def resource_detail(request, resource_id):
                   {
                       'user': request.user,
                       'resource': resource,
-                      'message': message
+                      'message': message,
+                      'debug': DEBUG
                   })
 
 

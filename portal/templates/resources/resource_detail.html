@@ -9,7 +9,7 @@
     {% if message %}
         <div class="text-danger" style="font-size: large">{{ message }}</div>
     {% endif %}
-    {% if user.is_authenticated %}
+    {% if user.is_authenticated and resource %}
         <div class="container w-85">
             <div class="d-flex flex-row align-items-center justify-content-between">
                 {% if resource.is_active %}
@@ -99,8 +99,12 @@
                 </tbody>
             </table>
         </div>
+        {% if debug %}
+            <hr>
+            <pre>{{ resource|pprint }}</pre>
+        {% endif %}
     {% else %}
-        <p>You are not logged in</p>
+        <p>You are not allowed to view this resource or are not logged in</p>
         <a href="{% url 'login' %}">
             <button class="message-btn btn btn-success">Login</button>
         </a>

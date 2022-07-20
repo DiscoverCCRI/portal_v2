@@ -21,7 +21,7 @@ class ExperimentSerializerList(serializers.ModelSerializer):
     class Meta:
         model = AerpawExperiment
         fields = ['canonical_number', 'created_date', 'description', 'experiment_creator', 'experiment_id',
-                  'experiment_uuid', 'experiment_state', 'is_canonical', 'is_retired', 'name']
+                  'experiment_uuid', 'experiment_state', 'is_canonical', 'is_retired', 'name', 'project_id']
 
 
 class ExperimentSerializerDetail(serializers.ModelSerializer):

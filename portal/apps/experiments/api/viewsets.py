@@ -74,6 +74,7 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - is_canonical           - boolean
         - is_retired             - boolean
         - name                   - string
+        - project_id             - int
 
         Permission:
         - user is_experiment_project_member OR
@@ -89,6 +90,10 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
             response_data = []
             for u in serializer.data:
                 du = dict(u)
+                # add experiment membership
+                experiment = AerpawExperiment.objects.get(pk=du.get('experiment_id'))
+                is_experiment_creator = experiment.is_creator(request.user)
+                is_experiment_member = experiment.is_member(request.user)
                 response_data.append(
                     {
                         'canonical_number': du.get('canonical_number'),
@@ -99,7 +104,12 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                         'experiment_uuid': du.get('experiment_uuid'),
                         'is_canonical': du.get('is_canonical'),
                         'is_retired': du.get('is_retired'),
-                        'name': du.get('name')
+                        'membership': {
+                            'is_experiment_creator': is_experiment_creator,
+                            'is_experiment_member': is_experiment_member
+                        },
+                        'name': du.get('name'),
+                        'project_id': du.get('project_id')
                     }
                 )
             if page:
@@ -205,11 +215,14 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - user is_operator
         """
         experiment = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
-        project = get_object_or_404(AerpawProject.objects.all(), pk=experiment.project.id)
+        project = get_object_or_404(AerpawProject, pk=experiment.project.id)
         if project.is_creator(request.user) or project.is_member(request.user) or \
                 project.is_owner(request.user) or request.user.is_operator():
             serializer = ExperimentSerializerDetail(experiment)
             du = dict(serializer.data)
+            # add experiment membership
+            is_experiment_creator = experiment.is_creator(request.user)
+            is_experiment_member = experiment.is_member(request.user)
             experiment_membership = []
             for p in du.get('experiment_membership'):
                 person = {
@@ -230,6 +243,10 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
                 'is_canonical': du.get('is_canonical'),
                 'is_retired': du.get('is_retired'),
                 'last_modified_by': AerpawUser.objects.get(username=du.get('last_modified_by')).id,
+                'membership': {
+                    'is_experiment_creator': is_experiment_creator,
+                    'is_experiment_member': is_experiment_member
+                },
                 'modified_date': str(du.get('modified_date')),
                 'name': du.get('name'),
                 'project_id': du.get('project_id'),
@@ -436,28 +453,36 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         """
         experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
         if experiment.is_creator(request.user) or experiment.is_member(request.user):
-            if str(request.method).casefold() in ['put', 'patch']:
-                experiment_members = request.data.get('experiment_members')
-                if isinstance(experiment_members, list) and all([isinstance(item, int) for item in experiment_members]):
-                    experiment_members_orig = UserExperiment.objects.filter(
-                        experiment__id=experiment.id
-                    ).values_list('user__id', flat=True)
-                    experiment_members_added = list(set(experiment_members).difference(set(experiment_members_orig)))
-                    experiment_members_removed = list(set(experiment_members_orig).difference(set(experiment_members)))
-                    for pk in experiment_members_added:
-                        if AerpawUser.objects.filter(pk=pk).exists():
-                            user = AerpawUser.objects.get(pk=pk)
-                            # limited to project membership (project_member, project_owner)
-                            if experiment.project.is_member(user) or experiment.project.is_owner(user):
-                                membership = UserExperiment()
-                                membership.granted_by = request.user
-                                membership.experiment = experiment
-                                membership.user = user
-                                membership.save()
-                    for pk in experiment_members_removed:
-                        membership = UserExperiment.objects.get(
-                            experiment__id=experiment.id, user__id=pk)
-                        membership.delete()
+            if str(request.method).casefold() in ['put', 'patch', 'post']:
+                if request.data.get('experiment_members'):
+                    try:
+                        experiment_members = request.data.getlist('experiment_members')
+                    except Exception as exc:
+                        print(exc)
+                        experiment_members = request.data.get('experiment_members')
+                    if isinstance(experiment_members, list) and all(
+                            [isinstance(item, int) for item in experiment_members]):
+                        experiment_members_orig = UserExperiment.objects.filter(
+                            experiment__id=experiment.id
+                        ).values_list('user__id', flat=True)
+                        experiment_members_added = list(
+                            set(experiment_members).difference(set(experiment_members_orig)))
+                        experiment_members_removed = list(
+                            set(experiment_members_orig).difference(set(experiment_members)))
+                        for pk in experiment_members_added:
+                            if AerpawUser.objects.filter(pk=pk).exists():
+                                user = AerpawUser.objects.get(pk=pk)
+                                # limited to project membership (project_member, project_owner)
+                                if experiment.project.is_member(user) or experiment.project.is_owner(user):
+                                    membership = UserExperiment()
+                                    membership.granted_by = request.user
+                                    membership.experiment = experiment
+                                    membership.user = user
+                                    membership.save()
+                        for pk in experiment_members_removed:
+                            membership = UserExperiment.objects.get(
+                                experiment__id=experiment.id, user__id=pk)
+                            membership.delete()
             # End of PUT, PATCH section - All reqeust types return membership
             serializer = ExperimentSerializerDetail(experiment)
             du = dict(serializer.data)

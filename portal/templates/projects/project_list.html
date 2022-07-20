@@ -38,7 +38,7 @@
                     <th>Public</th>
                     <th>Status</th>
 
-                    {% for project in projects.data.results %}
+                    {% for project in projects.results %}
                         <tr>
                             <td>
                                 <a href="{% url 'project_detail' project_id=project.project_id %}">
@@ -115,6 +115,10 @@
                 {% endif %}
             </div>
         </div>
+        {% if debug %}
+            <hr>
+            <pre>{{ projects|pprint }}</pre>
+        {% endif %}
     {% else %}
         <p>You are not logged in</p>
         <a href="{% url 'login' %}">

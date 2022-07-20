@@ -20,6 +20,7 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
     - experiment_state
     - id (from Basemodel)
     - is_canonical
+    - is_deleted
     - is_retired
     - modified (from AuditModelMixin)
     - modified_by (from AuditModelMixin)
@@ -89,6 +90,11 @@ class AerpawExperiment(BaseModel, AuditModelMixin, models.Model):
     def is_member(self, user: AerpawUser) -> bool:
         return UserExperiment.objects.filter(
             user=user, experiment=self).exists()
+
+    def experiment_members(self) -> [AerpawUser]:
+        return AerpawUser.objects.filter(
+            id__in=UserExperiment.objects.filter(experiment=self).values_list('user_id', flat=True)
+        ).order_by('display_name')
 
     def state(self):
         return self.experiment_state
