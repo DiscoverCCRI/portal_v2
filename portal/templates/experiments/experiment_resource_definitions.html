@@ -1,8 +1,8 @@
 {% extends 'base.html' %}
-{% load static django_bootstrap5 projects_tags %}
+{% load static django_bootstrap5 experiments_tags %}
 
 {% block title %}
-    Projects
+    Experiments
 {% endblock %}
 
 {% block content %}
@@ -24,31 +24,31 @@
         <div class="text-danger" style="font-size: large">{{ message }}</div>
     {% endif %}
     {% if user.is_authenticated %}
-        {% if is_project_creator or is_project_owner %}
+        {% if is_experiment_creator or is_experiment_member %}
             <div class="container w-85">
                 <div class="d-flex flex-row align-items-center justify-content-between">
-                    <h2>{{ project_id|id_to_project_name }}
-                        <em class="text-primary" style="font-size: large">(edit members)</em></h2>
+                    <h2>{{ experiment_id|id_to_experiment_name }}
+                        <em class="text-primary" style="font-size: large">(edit resource definitions)</em></h2>
                     <div>
-                        <button class="btn btn-success mr-2" type="submit" form="project-members" value="save">Save
+                        <button class="btn btn-success mr-2" type="submit" form="create-project" value="save">Save
                         </button>
                         <button class="btn btn-secondary mr-2" value="cancel">
-                            <a href="{% url 'project_detail' project_id=project_id %}" class="unlink">Back</a>
+                            <a href="{% url 'experiment_resource_list' experiment_id=experiment_id %}" class="unlink">Back</a>
                         </button>
                     </div>
                 </div>
                 <div>
-                    <form id="project-members" method="post">
+                    <form id="create-project" method="POST" class="post-form">
                         {% csrf_token %}
-                        {{ form.project_members }}
+                        {{ form.experiment_resources }}
                     </form>
                 </div>
             </div>
         {% else %}
-            You are not able to edit this project
+            You are not able to edit this experiment
         {% endif %}
     {% else %}
-        <p>You are not logged in</p>
+        <p>You are not allowed to view this experiment or are not logged in</p>
         <a href="{% url 'login' %}">
             <button class="message-btn btn btn-success">Login</button>
         </a>

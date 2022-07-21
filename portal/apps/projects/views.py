@@ -1,9 +1,10 @@
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth.decorators import login_required
-from django.http import QueryDict
+from django.http import HttpRequest, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.request import Request
 
 from portal.apps.projects.api.viewsets import ProjectViewSet
 from portal.apps.projects.forms import ProjectCreateForm, ProjectMembershipForm
@@ -21,16 +22,21 @@ def project_list(request):
         current_page = 1
         search_term = None
         data_dict = {}
+
+        api_request = Request(request=HttpRequest())
+        api_request.user = request.user
+        api_request.method = 'PUT'
+
         if request.GET.get('search'):
-            data_dict['search'] = request.GET.get('search')
+            api_request.query_params.update({'search': request.GET.get('search')})
             search_term = request.GET.get('search')
         if request.GET.get('page'):
-            data_dict['page'] = request.GET.get('page')
+            api_request.query_params.update({'page': request.GET.get('page')})
             current_page = int(request.GET.get('page'))
         request.query_params = QueryDict('', mutable=True)
         request.query_params.update(data_dict)
-        p = ProjectViewSet(request=request)
-        projects = p.list(request=request)
+        p = ProjectViewSet(request=api_request)
+        projects = p.list(request=api_request)
         # get prev, next and item range
         next_page = None
         prev_page = None
@@ -194,11 +200,12 @@ def project_members(request, project_id):
         form = ProjectMembershipForm(request.POST, instance=project)
         if form.is_valid():
             try:
-                request.query_params = QueryDict('', mutable=True)
-                request.data = QueryDict('', mutable=True)
-                request.data.setlist('project_members', [int(i) for i in request.POST.getlist('project_members')])
-                p = ProjectViewSet(request=request)
-                project = p.membership(request=request, pk=project_id)
+                api_request = Request(request=HttpRequest())
+                api_request.data.update({'project_members': [int(i) for i in request.POST.getlist('project_members')]})
+                api_request.user = request.user
+                api_request.method = 'PUT'
+                p = ProjectViewSet(request=api_request)
+                project = p.membership(request=api_request, pk=project_id)
                 return redirect('project_detail', project_id=project_id)
             except Exception as exc:
                 message = exc
@@ -231,11 +238,12 @@ def project_owners(request, project_id):
         form = ProjectMembershipForm(request.POST, instance=project)
         if form.is_valid():
             try:
-                request.query_params = QueryDict('', mutable=True)
-                request.data = QueryDict('', mutable=True)
-                request.data.setlist('project_owners', [int(i) for i in request.POST.getlist('project_owners')])
-                p = ProjectViewSet(request=request)
-                project = p.membership(request=request, pk=project_id)
+                api_request = Request(request=HttpRequest())
+                api_request.data.update({'project_owners': [int(i) for i in request.POST.getlist('project_owners')]})
+                api_request.user = request.user
+                api_request.method = 'PUT'
+                p = ProjectViewSet(request=api_request)
+                project = p.membership(request=api_request, pk=project_id)
                 return redirect('project_detail', project_id=project_id)
             except Exception as exc:
                 message = exc

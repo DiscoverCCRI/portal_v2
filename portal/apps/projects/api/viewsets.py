@@ -377,14 +377,9 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
         """
         project = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
         if project.is_creator(request.user) or project.is_owner(request.user):
-            print(request.data)
-            if str(request.method).casefold() in ['put', 'patch', 'post']:
-                if request.data.get('project_members'):
-                    try:
-                        project_members = request.data.getlist('project_members')
-                    except Exception as exc:
-                        print(exc)
-                        project_members = request.data.get('project_members')
+            if str(request.method).casefold() in ['put', 'patch']:
+                if request.data.get('project_members') or isinstance(request.data.get('project_members'), list):
+                    project_members = request.data.get('project_members')
                     if isinstance(project_members, list) and all([isinstance(item, int) for item in project_members]):
                         project_members_orig = UserProject.objects.filter(
                             project__id=project.id,
@@ -407,12 +402,8 @@ class ProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateM
                             membership = UserProject.objects.get(
                                 project__id=project.id, user__id=pk, project_role=UserProject.RoleType.PROJECT_MEMBER)
                             membership.delete()
-                if request.data.get('project_owners'):
-                    try:
-                        project_owners = request.data.getlist('project_owners')
-                    except Exception as exc:
-                        print(exc)
-                        project_owners = request.data.get('project_owners')
+                if request.data.get('project_owners') or isinstance(request.data.get('project_owners'), list):
+                    project_owners = request.data.get('project_owners')
                     if isinstance(project_owners, list) and all([isinstance(item, int) for item in project_owners]):
                         project_owners_orig = UserProject.objects.filter(
                             project__id=project.id,

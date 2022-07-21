@@ -39,13 +39,6 @@ class AerpawProject(BaseModel, AuditModelMixin, models.Model):
         through='UserProject',
         through_fields=('project', 'user')
     )
-    # project_owners = models.ManyToManyField(
-    #     AerpawUser,
-    #     related_name='project_owners',
-    #     through='UserProject',
-    #     through_fields=('project', 'user'),
-    #     limit_choices_to={'project_role': 'project_owner'}
-    # )
     uuid = models.CharField(max_length=255, primary_key=False, editable=False)
 
     class Meta:

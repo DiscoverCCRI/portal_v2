@@ -1,5 +1,3 @@
-import os
-
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -19,7 +17,6 @@ def profile(request):
     user = request.user
     user_data = UserViewSet()
     message = None
-    print(os.getenv('DJANGO_DEBUG'))
     if request.method == 'POST':
         try:
             if request.POST.get('display_name'):

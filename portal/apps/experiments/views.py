@@ -1,12 +1,14 @@
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth.decorators import login_required
-from django.http import QueryDict
+from django.http import HttpRequest, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.request import Request
 
 from portal.apps.experiments.api.viewsets import CanonicalExperimentResourceViewSet, ExperimentViewSet
-from portal.apps.experiments.forms import ExperimentCreateForm, ExperimentEditForm, ExperimentMembershipForm
+from portal.apps.experiments.forms import ExperimentCreateForm, ExperimentEditForm, ExperimentMembershipForm, \
+    ExperimentResourceDefinitionForm
 from portal.apps.experiments.models import AerpawExperiment
 from portal.apps.projects.api.viewsets import ProjectViewSet
 from portal.server.settings import DEBUG, REST_FRAMEWORK
@@ -202,16 +204,16 @@ def experiment_members(request, experiment_id):
     is_experiment_member = False
     experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
     if request.method == "POST":
-        print([int(i) for i in request.POST.getlist('experiment_members')])
         form = ExperimentMembershipForm(request.POST, instance=experiment)
         if form.is_valid():
             try:
-                request.query_params = QueryDict('', mutable=True)
-                request.data = QueryDict('', mutable=True)
-                request.data.setlist('experiment_members', [int(i) for i in request.POST.getlist('experiment_members')])
-                e = ExperimentViewSet(request=request)
-                experiment = e.membership(request=request, pk=experiment_id)
-                print(experiment.data)
+                api_request = Request(request=HttpRequest())
+                api_request.data.update(
+                    {'experiment_members': [int(i) for i in request.POST.getlist('experiment_members')]})
+                api_request.user = request.user
+                api_request.method = 'PUT'
+                e = ExperimentViewSet(request=api_request)
+                experiment = e.membership(request=api_request, pk=experiment_id)
                 return redirect('experiment_detail', experiment_id=experiment_id)
             except Exception as exc:
                 message = exc
@@ -224,6 +226,118 @@ def experiment_members(request, experiment_id):
         form = ExperimentMembershipForm(instance=experiment, initial=initial_dict)
     return render(request,
                   'experiment_members.html',
+                  {
+                      'form': form,
+                      'message': message,
+                      'experiment_id': experiment_id,
+                      'is_experiment_creator': is_experiment_creator,
+                      'is_experiment_member': is_experiment_member
+                  })
+
+
+@csrf_exempt
+@login_required
+def experiment_resource_list(request, experiment_id):
+    message = None
+    try:
+        # check for query parameters
+        current_page = 1
+        search_term = None
+        data_dict = {'experiment_id': experiment_id}
+        if request.GET.get('search'):
+            data_dict['search'] = request.GET.get('search')
+            search_term = request.GET.get('search')
+        if request.GET.get('page'):
+            data_dict['page'] = request.GET.get('page')
+            current_page = int(request.GET.get('page'))
+        request.query_params = QueryDict('', mutable=True)
+        request.query_params.update(data_dict)
+        r = CanonicalExperimentResourceViewSet(request=request)
+        resources = r.list(request=request)
+        # get prev, next and item range
+        next_page = None
+        prev_page = None
+        count = 0
+        min_range = 0
+        max_range = 0
+        if resources.data:
+            resources = dict(resources.data)
+            prev_url = resources.get('previous', None)
+            if prev_url:
+                prev_dict = parse_qs(urlparse(prev_url).query)
+                try:
+                    prev_page = prev_dict['page'][0]
+                except Exception as exc:
+                    print(exc)
+                    prev_page = 1
+            next_url = resources.get('next', None)
+            if next_url:
+                next_dict = parse_qs(urlparse(next_url).query)
+                try:
+                    next_page = next_dict['page'][0]
+                except Exception as exc:
+                    print(exc)
+                    next_page = 1
+            count = int(resources.get('count'))
+            min_range = int(current_page - 1) * int(REST_FRAMEWORK['PAGE_SIZE']) + 1
+            max_range = int(current_page - 1) * int(REST_FRAMEWORK['PAGE_SIZE']) + int(REST_FRAMEWORK['PAGE_SIZE'])
+            if max_range > count:
+                max_range = count
+        item_range = '{0} - {1}'.format(str(min_range), str(max_range))
+    except Exception as exc:
+        message = exc
+        resources = None
+        item_range = None
+        next_page = None
+        prev_page = None
+        search_term = None
+        count = 0
+    return render(request,
+                  'experiment_resource_list.html',
+                  {
+                      'user': request.user,
+                      'resources': resources,
+                      'experiment_id': experiment_id,
+                      'item_range': item_range,
+                      'message': message,
+                      'next_page': next_page,
+                      'prev_page': prev_page,
+                      'search': search_term,
+                      'count': count,
+                      'debug': DEBUG
+                  })
+
+
+@csrf_exempt
+@login_required
+def experiment_resource_definitions(request, experiment_id):
+    message = None
+    is_experiment_creator = False
+    is_experiment_member = False
+    experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
+    if request.method == "POST":
+        form = ExperimentResourceDefinitionForm(request.POST, instance=experiment)
+        if form.is_valid():
+            try:
+                api_request = Request(request=HttpRequest())
+                api_request.data.update(
+                    {'experiment_resources': [int(i) for i in request.POST.getlist('experiment_resources')]})
+                api_request.user = request.user
+                api_request.method = 'PUT'
+                e = ExperimentViewSet(request=api_request)
+                exp = e.resources(request=api_request, pk=experiment_id)
+                return redirect('experiment_resource_list', experiment_id=experiment_id)
+            except Exception as exc:
+                message = exc
+    else:
+        is_experiment_creator = experiment.is_creator(request.user)
+        is_experiment_member = experiment.is_member(request.user)
+        initial_dict = {
+            'experiment_resources': list(experiment.resources.all().values_list('id', flat=True))
+        }
+        form = ExperimentResourceDefinitionForm(instance=experiment, initial=initial_dict)
+    return render(request,
+                  'experiment_resource_definitions.html',
                   {
                       'form': form,
                       'message': message,

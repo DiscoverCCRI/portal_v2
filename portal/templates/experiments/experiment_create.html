@@ -6,7 +6,6 @@
 {% endblock %}
 
 {% block content %}
-    {{ project }}
     {% if message %}
         <div class="text-danger" style="font-size: large">{{ message }}</div>
     {% endif %}
@@ -23,7 +22,7 @@
                 <button class="btn btn-success mr-2" type="submit" form="create-experiment" value="save">Save
                 </button>
                 <button class="btn btn-secondary mr-2" value="cancel">
-                    <a href="{% url 'experiment_list' %}" class="unlink">Back</a>
+                    <a href="{% url 'project_detail' project_id=project.project_id %}" class="unlink">Back</a>
                 </button>
             </div>
         {% else %}

@@ -349,65 +349,59 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
         if experiment.is_creator(request.user) or experiment.is_member(request.user):
             if str(request.method).casefold() in ['put', 'patch']:
-                resources = request.data.get('experiment_resources')
-                # validate array of resources
-                print(resources)
-                resource_ids = [item.get('resource_id') for item in resources]
-                resource_node_uhds = [item.get('node_uhd') for item in resources]
-                if isinstance(resource_ids, list) and all([isinstance(item, int) for item in resource_ids]) and \
-                        all([item in [c[0] for c in CanonicalExperimentResource.NodeUhd.choices] for item in
-                             resource_node_uhds]):
-                    print("passed test")
-                    resources_orig = list(set(experiment.resources.all().values_list('id', flat=True)))
-                    resources_added = list(set(resource_ids).difference(set(resources_orig)))
-                    resources_removed = list(set(resources_orig).difference(set(resource_ids)))
-                    # TODO: canonical-experiment-resource logic
-                    for pk in resources_added:
-                        if AerpawResource.objects.filter(pk=pk).exists():
-                            resource = AerpawResource.objects.get(pk=pk)
-                            if not experiment.is_canonical or \
-                                    (experiment.is_canonical and
-                                     resource.resource_class == AerpawResource.ResourceClass.ALLOW_CANONICAL):
-                                # add resource to project
-                                experiment.resources.add(resource)
-                                # create canonical-experiment-resource if resource is_canonical
-                                canonical_experiment_resource = CanonicalExperimentResource()
-                                node_uhd = next(item.get('node_uhd') for item in resources if item['resource_id'] == pk)
-                                canonical_experiment_resource.experiment = experiment
-                                canonical_experiment_resource.resource = resource
-                                canonical_experiment_resource.node_uhd = node_uhd
-                                if resource.resource_type == AerpawResource.ResourceType.AFRN:
-                                    canonical_experiment_resource.node_type = CanonicalExperimentResource.NodeType.AFRN
-                                    canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE
-                                else:
-                                    canonical_experiment_resource.node_type = CanonicalExperimentResource.NodeType.APRN
-                                    if resource.resource_type == AerpawResource.ResourceType.UAV:
-                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_UAV
-                                    if resource.resource_type == AerpawResource.ResourceType.UGV:
-                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_UGV
-                                    if resource.resource_type == AerpawResource.ResourceType.OTHER:
-                                        canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_OTHER
-                                    if resource.resource_type == AerpawResource.ResourceType.THREE_PBBE:
+                if request.data.get('experiment_resources') or isinstance(request.data.get('experiment_resources'),
+                                                                          list):
+                    resource_ids = request.data.get('experiment_resources')
+                    if isinstance(resource_ids, list) and all([isinstance(item, int) for item in resource_ids]):
+                        resources_orig = list(set(experiment.resources.all().values_list('id', flat=True)))
+                        resources_added = list(set(resource_ids).difference(set(resources_orig)))
+                        resources_removed = list(set(resources_orig).difference(set(resource_ids)))
+                        # TODO: canonical-experiment-resource logic
+                        for pk in resources_added:
+                            if AerpawResource.objects.filter(pk=pk).exists():
+                                resource = AerpawResource.objects.get(pk=pk)
+                                if not experiment.is_canonical or \
+                                        (experiment.is_canonical and
+                                         resource.resource_class == AerpawResource.ResourceClass.ALLOW_CANONICAL):
+                                    # add resource to project
+                                    experiment.resources.add(resource)
+                                    # create canonical-experiment-resource if resource is_canonical
+                                    canonical_experiment_resource = CanonicalExperimentResource()
+                                    canonical_experiment_resource.experiment = experiment
+                                    canonical_experiment_resource.resource = resource
+                                    canonical_experiment_resource.node_uhd = CanonicalExperimentResource.NodeUhd.ONE_THREE_THREE
+                                    if resource.resource_type == AerpawResource.ResourceType.AFRN:
+                                        canonical_experiment_resource.node_type = CanonicalExperimentResource.NodeType.AFRN
                                         canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE
-                                canonical_experiment_resource.save()
-                            else:
-                                raise ValidationError(
-                                    detail="ValidationError: ALLOW_CANONICAL /experiments/{0}/resources".format(
-                                        kwargs.get('pk')))
-                    for pk in resources_removed:
-                        resource = AerpawResource.objects.get(pk=pk)
-                        # remove/delete canonical-experiment-resource if resource is_canonical
-                        canonical_experiment_resource = CanonicalExperimentResource.objects.filter(
-                            resource__id=pk,
-                            experiment__id=experiment.id
-                        )
-                        canonical_experiment_resource.delete()
-                        # remove resource from project
-                        experiment.resources.remove(resource)
-                        experiment.save()
+                                    else:
+                                        canonical_experiment_resource.node_type = CanonicalExperimentResource.NodeType.APRN
+                                        if resource.resource_type == AerpawResource.ResourceType.UAV:
+                                            canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_UAV
+                                        if resource.resource_type == AerpawResource.ResourceType.UGV:
+                                            canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_UGV
+                                        if resource.resource_type == AerpawResource.ResourceType.OTHER:
+                                            canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_OTHER
+                                        if resource.resource_type == AerpawResource.ResourceType.THREE_PBBE:
+                                            canonical_experiment_resource.node_vehicle = CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE
+                                    canonical_experiment_resource.save()
+                                else:
+                                    raise ValidationError(
+                                        detail="ValidationError: ALLOW_CANONICAL /experiments/{0}/resources".format(
+                                            kwargs.get('pk')))
+                        for pk in resources_removed:
+                            resource = AerpawResource.objects.get(pk=pk)
+                            # remove/delete canonical-experiment-resource if resource is_canonical
+                            canonical_experiment_resource = CanonicalExperimentResource.objects.filter(
+                                resource__id=pk,
+                                experiment__id=experiment.id
+                            )
+                            canonical_experiment_resource.delete()
+                            # remove resource from project
+                            experiment.resources.remove(resource)
+                            experiment.save()
                     # calculate experiment node numbers
                     cers = CanonicalExperimentResource.objects.filter(experiment__id=experiment.id).order_by(
-                        'resource_id')
+                        'created')
                     enn = 1
                     for cer in cers:
                         cer.experiment_node_number = enn
@@ -454,12 +448,8 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         experiment = get_object_or_404(self.get_queryset(), pk=kwargs.get('pk'))
         if experiment.is_creator(request.user) or experiment.is_member(request.user):
             if str(request.method).casefold() in ['put', 'patch', 'post']:
-                if request.data.get('experiment_members'):
-                    try:
-                        experiment_members = request.data.getlist('experiment_members')
-                    except Exception as exc:
-                        print(exc)
-                        experiment_members = request.data.get('experiment_members')
+                if request.data.get('experiment_members') or isinstance(request.data.get('experiment_members'), list):
+                    experiment_members = request.data.get('experiment_members')
                     if isinstance(experiment_members, list) and all(
                             [isinstance(item, int) for item in experiment_members]):
                         experiment_members_orig = UserExperiment.objects.filter(
@@ -810,15 +800,15 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
             queryset = CanonicalExperimentResource.objects.filter(
                 experiment__id=experiment_id,
                 resource__id=resource_id
-            ).order_by('-created').distinct()
+            ).order_by('created').distinct()
         elif experiment_id:
             queryset = CanonicalExperimentResource.objects.filter(
                 experiment__id=experiment_id
-            ).order_by('-created').distinct()
+            ).order_by('created').distinct()
         elif resource_id:
             queryset = CanonicalExperimentResource.objects.filter(
                 resource__id=resource_id
-            ).order_by('-created').distinct()
+            ).order_by('created').distinct()
         else:
             queryset = CanonicalExperimentResource.objects.filter().order_by('-created').distinct()
         return queryset
@@ -837,7 +827,17 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
         Permission:
         - user is_operator
         """
-        if request.user.is_operator():
+        try:
+            experiment_id = self.request.query_params.get('experiment_id', None)
+            experiment = AerpawExperiment.objects.get(pk=experiment_id)
+            if experiment.is_creator(request.user) or experiment.is_member(request.user):
+                is_experimenter = True
+            else:
+                is_experimenter = False
+        except Exception as exc:
+            print(exc)
+            is_experimenter = False
+        if request.user.is_operator() or is_experimenter:
             page = self.paginate_queryset(self.get_queryset())
             if page:
                 serializer = CanonicalExperimentResourceSerializer(page, many=True)
@@ -895,7 +895,17 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
         - user is_operator
         """
         canonical_experiment_resource = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
-        if request.user.is_operator():
+        try:
+            experiment_id = canonical_experiment_resource.experiment.id
+            experiment = AerpawExperiment.objects.get(pk=experiment_id)
+            if experiment.is_creator(request.user) or experiment.is_member(request.user):
+                is_experimenter = True
+            else:
+                is_experimenter = False
+        except Exception as exc:
+            print(exc)
+            is_experimenter = False
+        if request.user.is_operator() or is_experimenter:
             serializer = CanonicalExperimentResourceSerializer(canonical_experiment_resource)
             du = dict(serializer.data)
             response_data = {

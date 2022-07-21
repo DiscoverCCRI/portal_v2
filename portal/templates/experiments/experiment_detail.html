@@ -41,6 +41,10 @@
                                     <a onclick="return confirm('Are you sure you want to delete this experiment?')">Delete</a>
                                 </button>
                             {% endif %}
+                            <button class="btn btn-secondary mr-2">
+                                <a href="{% url 'project_detail' project_id=experiment.project_id %}"
+                                   class="unlink">Back</a>
+                            </button>
                         </form>
                     </div>
                 {% endif %}
@@ -99,13 +103,12 @@
                     </tr>
                     <tr>
                         <td style="width: 25%">
-                            Resources
+                            Resource Definitions
                             {% if not experiment.is_retired %}
                                 {% if experiment.membership.is_experiment_creator or experiment.membership.is_experiment_member %}
                                     <button class="btn btn-secondary mr-2" style="float: right">
-                                        Update
-                                        {# <a href="{% url 'experiment_resources' experiment_id=experiment.experiment_id %}"#}
-                                        {#    class="unlink">Update</a>#}
+                                        <a href="{% url 'experiment_resource_list' experiment_id=experiment.experiment_id %}"
+                                           class="unlink">Update</a>
                                     </button>
                                 {% endif %}
                             {% endif %}
@@ -114,7 +117,9 @@
                             {% for resource in resources %}
                                 <strong><a href="{% url 'resource_detail' resource_id=resource.resource_id %}">
                                     {{ resource.resource_id|id_to_resource_name }}</a>
-                                </strong><br>
+                                </strong>
+                                -<em class="small">node number:
+                                <strong>{{ resource.experiment_node_number }}</strong></em><br>
                                 - <em class="small">node type: <strong>{{ resource.node_type }}</strong></em><br>
                                 - <em class="small">node uhd: <strong>{{ resource.node_uhd }}</strong></em><br>
                                 - <em class="small">node vehicle <strong>{{ resource.node_vehicle }}</strong></em><br>
