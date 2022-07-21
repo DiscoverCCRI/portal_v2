@@ -90,10 +90,8 @@ class ExperimentMembershipForm(forms.ModelForm):
 class ExperimentResourceDefinitionForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super(ExperimentResourceDefinitionForm, self).__init__(*args, **kwargs)
-        # exp = kwargs.get('instance')
-        # project = AerpawProject.objects.get(id=int(exp.project_id))
         self.fields['experiment_resources'].queryset = AerpawResource.objects.filter(
-            resource_class=AerpawResource.ResourceClass.ALLOW_CANONICAL).order_by('name')
+            resource_class=AerpawResource.ResourceClass.ALLOW_CANONICAL, is_deleted=False).order_by('name')
 
     experiment_resources = forms.ModelMultipleChoiceField(
         queryset=None,
