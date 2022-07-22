@@ -8,8 +8,8 @@ from rest_framework.request import Request
 
 from portal.apps.experiments.api.viewsets import CanonicalExperimentResourceViewSet, ExperimentViewSet
 from portal.apps.experiments.forms import ExperimentCreateForm, ExperimentEditForm, ExperimentMembershipForm, \
-    ExperimentResourceDefinitionForm
-from portal.apps.experiments.models import AerpawExperiment
+    ExperimentResourceTargetsForm, ExperimentResourceTargetModifyForm
+from portal.apps.experiments.models import AerpawExperiment, CanonicalExperimentResource
 from portal.apps.projects.api.viewsets import ProjectViewSet
 from portal.server.settings import DEBUG, REST_FRAMEWORK
 
@@ -238,7 +238,7 @@ def experiment_members(request, experiment_id):
 @csrf_exempt
 @login_required
 def experiment_resource_list(request, experiment_id):
-    message = None
+    message = 'Be sure to properly configure "Node UHD" and "Node Vehicle"'
     try:
         # check for query parameters
         current_page = 1
@@ -310,13 +310,13 @@ def experiment_resource_list(request, experiment_id):
 
 @csrf_exempt
 @login_required
-def experiment_resource_definitions(request, experiment_id):
+def experiment_resource_targets(request, experiment_id):
     message = None
     is_experiment_creator = False
     is_experiment_member = False
     experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
     if request.method == "POST":
-        form = ExperimentResourceDefinitionForm(request.POST, instance=experiment)
+        form = ExperimentResourceTargetsForm(request.POST, instance=experiment)
         if form.is_valid():
             try:
                 api_request = Request(request=HttpRequest())
@@ -335,9 +335,9 @@ def experiment_resource_definitions(request, experiment_id):
         initial_dict = {
             'experiment_resources': list(experiment.resources.all().values_list('id', flat=True))
         }
-        form = ExperimentResourceDefinitionForm(instance=experiment, initial=initial_dict)
+        form = ExperimentResourceTargetsForm(instance=experiment, initial=initial_dict)
     return render(request,
-                  'experiment_resource_definitions.html',
+                  'experiments/experiment_resource_targets.html',
                   {
                       'form': form,
                       'message': message,
@@ -345,3 +345,50 @@ def experiment_resource_definitions(request, experiment_id):
                       'is_experiment_creator': is_experiment_creator,
                       'is_experiment_member': is_experiment_member
                   })
+
+
+@csrf_exempt
+@login_required
+def experiment_resource_target_edit(request, experiment_id, canonical_experiment_resource_id):
+    message = None
+    is_experiment_creator = False
+    is_experiment_member = False
+    cer = get_object_or_404(CanonicalExperimentResource, id=canonical_experiment_resource_id)
+    if request.method == "POST":
+        form = ExperimentResourceTargetModifyForm(request.POST, instance=cer)
+        if form.is_valid():
+            try:
+                api_request = Request(request=HttpRequest())
+                if request.POST.get('node_uhd'):
+                    api_request.data.update({'node_uhd': request.POST.get('node_uhd')})
+                if request.POST.get('node_vehicle'):
+                    api_request.data.update({'node_vehicle': request.POST.get('node_vehicle')})
+                api_request.user = request.user
+                api_request.method = 'PUT'
+                c = CanonicalExperimentResourceViewSet(request=api_request)
+                u_cer = c.update(request=api_request, pk=canonical_experiment_resource_id)
+                return redirect('experiment_resource_list', experiment_id=experiment_id)
+            except Exception as exc:
+                message = exc
+    else:
+        is_experiment_creator = cer.experiment.is_creator(request.user)
+        is_experiment_member = cer.experiment.is_member(request.user)
+        initial_dict = {
+            'name': cer.resource.name,
+            'node_type': cer.node_type,
+            'node_uhd': cer.node_uhd,
+            'node_vehicle': cer.node_vehicle
+        }
+        form = ExperimentResourceTargetModifyForm(instance=cer, initial=initial_dict)
+    return render(request,
+                  'experiment_resource_target_edit.html',
+                  {
+                      'form': form,
+                      'message': message,
+                      'canonical_experiment_resource_id': canonical_experiment_resource_id,
+                      'experiment_id': experiment_id,
+                      'is_experiment_creator': is_experiment_creator,
+                      'is_experiment_member': is_experiment_member,
+                      'cer': cer
+                  })
+

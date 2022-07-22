@@ -1,7 +1,7 @@
 from django import forms
 from django.contrib.admin.widgets import FilteredSelectMultiple
 
-from portal.apps.experiments.models import AerpawExperiment
+from portal.apps.experiments.models import AerpawExperiment, CanonicalExperimentResource
 from portal.apps.projects.models import AerpawProject
 from portal.apps.resources.models import AerpawResource
 
@@ -87,11 +87,13 @@ class ExperimentMembershipForm(forms.ModelForm):
         fields = ['experiment_members']
 
 
-class ExperimentResourceDefinitionForm(forms.ModelForm):
+class ExperimentResourceTargetsForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
-        super(ExperimentResourceDefinitionForm, self).__init__(*args, **kwargs)
+        super(ExperimentResourceTargetsForm, self).__init__(*args, **kwargs)
         self.fields['experiment_resources'].queryset = AerpawResource.objects.filter(
-            resource_class=AerpawResource.ResourceClass.ALLOW_CANONICAL, is_deleted=False).order_by('name')
+            resource_class=AerpawResource.ResourceClass.ALLOW_CANONICAL,
+            resource_type__in=[AerpawResource.ResourceType.AFRN, AerpawResource.ResourceType.APRN],
+            is_deleted=False).order_by('name')
 
     experiment_resources = forms.ModelMultipleChoiceField(
         queryset=None,
@@ -120,3 +122,29 @@ class ExperimentResourceDefinitionForm(forms.ModelForm):
     class Meta:
         model = AerpawResource
         fields = ['experiment_resources']
+
+
+class ExperimentResourceTargetModifyForm(forms.ModelForm):
+    def __init__(self, *args, **kwargs):
+        super(ExperimentResourceTargetModifyForm, self).__init__(*args, **kwargs)
+        cer = kwargs.get('instance')
+        self.fields['node_uhd'].choices = CanonicalExperimentResource.NodeUhd.choices
+        self.fields['node_uhd'].selected = cer.node_uhd
+        self.fields['node_vehicle'].choices = CanonicalExperimentResource.NodeVehicle.choices
+        self.fields['node_vehicle'].selected = cer.node_vehicle
+
+    node_uhd = forms.ChoiceField(
+        choices=(),
+        required=False,
+        label='Node UHD'
+    )
+
+    node_vehicle = forms.ChoiceField(
+        choices=(),
+        required=False,
+        label='Node Vehicle'
+    )
+
+    class Meta:
+        model = CanonicalExperimentResource
+        fields = ['node_uhd', 'node_vehicle']

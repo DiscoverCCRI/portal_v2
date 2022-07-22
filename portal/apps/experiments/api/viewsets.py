@@ -936,7 +936,69 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
         Permission:
         - user is_operator
         """
-        raise MethodNotAllowed(method="PUT/PATCH: /canonical-experiment-resource/{int:pk}")
+        cer = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if cer.experiment.is_creator(request.user) or cer.experiment.is_member(request.user):
+            modified = False
+            # check node_uhd
+            if request.data.get('node_uhd', None):
+                if request.data.get('node_uhd') not in [c[0] for c in CanonicalExperimentResource.NodeUhd.choices]:
+                    raise ValidationError(
+                        detail="node_uhd:  valid choices are {0}".format([c[0] for c in CanonicalExperimentResource.NodeUhd.choices]))
+                cer.node_uhd = request.data.get('node_uhd')
+                modified = True
+            # check node_vehicle
+            if request.data.get('node_vehicle', None):
+                node_vehicle = request.data.get('node_vehicle')
+                if node_vehicle not in [c[0] for c in CanonicalExperimentResource.NodeVehicle.choices]:
+                    raise ValidationError(
+                        detail="node_vehicle:  valid choices are {0}".format([c[0] for c in CanonicalExperimentResource.NodeVehicle.choices]))
+                # AFRN must be vehicle_none
+                if cer.resource.resource_type == AerpawResource.ResourceType.AFRN and node_vehicle != CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE:
+                    raise ValidationError(
+                        detail="node_vehicle: resource type AFRN must be vehicle_none")
+                # APRN must be in [vehicle_uav, vehicle_ugv, vehicle_none]
+                if cer.resource.resource_type == AerpawResource.ResourceType.APRN and node_vehicle not in [CanonicalExperimentResource.NodeVehicle.VEHICLE_UAV, CanonicalExperimentResource.NodeVehicle.VEHICLE_UGV, CanonicalExperimentResource.NodeVehicle.VEHICLE_NONE]:
+                    raise ValidationError(
+                        detail="node_vehicle: resource type APRN must be in [vehicle_uav, vehicle_ugv, vehicle_none]")
+                # TODO: other checks for UAV, UGV, 3PBBE, Other
+                cer.node_vehicle = request.data.get('node_vehicle')
+                modified = True
+            # save if modified
+            if modified:
+                cer.modified_by = request.user.email
+                cer.save()
+            return self.retrieve(request, pk=cer.id)
+
+
+        # if not .is_deleted and (project.is_creator(request.user) or project.is_owner(request.user)):
+        #     modified = False
+        #     # check for description
+        #     if request.data.get('description', None):
+        #         if len(request.data.get('description')) < PROJECT_MIN_DESC_LEN:
+        #             raise ValidationError(
+        #                 detail="description:  must be at least {0} chars long".format(PROJECT_MIN_DESC_LEN))
+        #         project.description = request.data.get('description')
+        #         modified = True
+        #     # check for is_public
+        #     if str(request.data.get('is_public')).casefold() in ['true', 'false']:
+        #         is_public = str(request.data.get('is_public')).casefold() == 'true'
+        #         project.is_public = is_public
+        #         modified = True
+        #     # check for name
+        #     if request.data.get('name', None):
+        #         if len(request.data.get('name')) < PROJECT_MIN_NAME_LEN:
+        #             raise ValidationError(
+        #                 detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
+        #         project.name = request.data.get('name')
+        #         modified = True
+        #     # save if modified
+        #     if modified:
+        #         project.modified_by = request.user.email
+        #         project.save()
+        #     return self.retrieve(request, pk=project.id)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to PUT/PATCH /canonical-experiment-resource/{0} details".format(kwargs.get('pk')))
 
     def partial_update(self, request, *args, **kwargs):
         """

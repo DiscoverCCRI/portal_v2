@@ -14,9 +14,9 @@
             <div class="d-flex flex-row align-items-center justify-content-between">
                 <h2>{{ experiment.name }}
                     {% if not experiment.is_retired %}
-                        <em class="text-success" style="font-size: medium">(status: Active)</em>
+                        <em class="text-success" style="font-size: medium">(is retired: No)</em>
                     {% else %}
-                        <em class="text-danger" style="font-size: medium">(status: Retired)</em>
+                        <em class="text-danger" style="font-size: medium">(is retired: Yes)</em>
                     {% endif %}
                     <em class="text-primary" style="font-size: medium">(canonical: {{ experiment.is_canonical }} )</em>
                     <em class="text-primary" style="font-size: medium">(state: {{ experiment.experiment_state }})</em>
@@ -24,7 +24,7 @@
                 {% if experiment.is_deleted %}
                     <a class="text-danger" style="font-size: medium"><strong>(DELETED)</strong></a>
                 {% endif %}
-                {% if not experiment.is_deleted %}
+                {% if not experiment.is_deleted or experiment.is_retired %}
                     <div>
                         <form action="{% url 'experiment_detail' experiment_id=experiment.experiment_id %}"
                               method="POST">
@@ -103,7 +103,7 @@
                     </tr>
                     <tr>
                         <td style="width: 25%">
-                            Resource Definitions
+                            Targeted Resources
                             {% if not experiment.is_retired %}
                                 {% if experiment.membership.is_experiment_creator or experiment.membership.is_experiment_member %}
                                     <button class="btn btn-secondary mr-2" style="float: right">
@@ -118,7 +118,7 @@
                                 <strong><a href="{% url 'resource_detail' resource_id=resource.resource_id %}">
                                     {{ resource.resource_id|id_to_resource_name }}</a>
                                 </strong>
-                                -<em class="small">node number:
+                                - <em class="small">node number:
                                 <strong>{{ resource.experiment_node_number }}</strong></em><br>
                                 - <em class="small">node type: <strong>{{ resource.node_type }}</strong></em><br>
                                 - <em class="small">node uhd: <strong>{{ resource.node_uhd }}</strong></em><br>
