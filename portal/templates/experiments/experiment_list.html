@@ -40,6 +40,9 @@
                                 <a href="{% url 'experiment_detail' experiment_id=experiment.experiment_id %}">
                                     {{ experiment.name }}
                                 </a>
+                                {% if experiment.is_retired %}
+                                    <strong class="text-danger small">( RETIRED )</strong>
+                                {% endif %}
                             </td>
                             <td>{{ experiment.description|truncatechars:40 }}</td>
                             <td>
