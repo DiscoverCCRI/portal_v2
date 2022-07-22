@@ -58,10 +58,14 @@
                                     Member
                                 {% endif %}
                                 {% if not experiment.membership.is_experiment_creator and not experiment.membership.is_experiment_member %}
-                                    <button class="btn btn-success mr-2 disabled" id="experiment_join_request"
-                                            type="submit">
-                                        Request to Join
-                                    </button>
+                                    {% if experiment.is_retired %}
+                                        <em class="text-danger">IS RETIRED</em>
+                                    {% else %}
+                                        <button class="btn btn-success mr-2 disabled" id="experiment_join_request"
+                                                type="submit">
+                                            Request to Join
+                                        </button>
+                                    {% endif %}
                                 {% endif %}
                             </td>
                         </tr>

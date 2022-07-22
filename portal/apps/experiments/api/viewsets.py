@@ -328,8 +328,8 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         - user is_experiment_creator OR
         - user is_experiment_member
         """
-        experiment = get_object_or_404(self.get_queryset(), pk=pk)
-        if request.user is experiment.experiment_creator or request.user in experiment.experiment_membership:
+        experiment = get_object_or_404(self.queryset, pk=pk)
+        if experiment.is_creator(request.user) or experiment.is_member(request.user):
             if experiment.is_retired:
                 raise PermissionDenied(
                     detail="PermissionDenied: IS_RETIRED - unable to DELETE /experiments/{0}".format(pk))

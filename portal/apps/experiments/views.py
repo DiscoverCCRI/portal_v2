@@ -90,14 +90,14 @@ def experiment_list(request):
 @csrf_exempt
 @login_required
 def experiment_detail(request, experiment_id):
-    e = ExperimentViewSet(request=request)
     message = None
     try:
+        e = ExperimentViewSet(request=request)
+        experiment = e.retrieve(request=request, pk=experiment_id).data
         if request.method == "POST":
             if request.POST.get('delete-experiment') == "true":
-                experiment = e.destroy(request=request, pk=experiment_id).data
+                exp = e.destroy(request=request, pk=experiment_id).data
                 return redirect('experiment_list')
-        experiment = e.retrieve(request=request, pk=experiment_id).data
         # get canonical experiment resource definitions
         try:
             resources = []
@@ -114,7 +114,6 @@ def experiment_detail(request, experiment_id):
             print(exc)
     except Exception as exc:
         message = exc
-        experiment = None
         resources = []
     return render(request,
                   'experiment_detail.html',
