@@ -153,6 +153,11 @@ class ResourceViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Update
             if resource_type not in [c[0] for c in AerpawResource.ResourceType.choices]:
                 raise ValidationError(
                     detail="resource_type: must be a valid Resource Type value")
+            # check if allow_canonical is of type AFRN or APRN
+            if resource_class == AerpawResource.ResourceClass.ALLOW_CANONICAL and \
+                    resource_type not in [AerpawResource.ResourceType.AFRN, AerpawResource.ResourceType.APRN]:
+                raise ValidationError(
+                    detail="resource_class: ALLOW_CANONICAL must be type AFRN or APRN")
             # check if UAV or UGV that resource_mode == testbed
             if resource_type in [AerpawResource.ResourceType.UAV, AerpawResource.ResourceType.UGV] and \
                     resource_mode != AerpawResource.ResourceMode.TESTBED:

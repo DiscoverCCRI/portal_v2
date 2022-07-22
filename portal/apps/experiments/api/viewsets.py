@@ -273,6 +273,9 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         experiment = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
         if not experiment.is_deleted and \
                 (request.user is experiment.experiment_creator or experiment.is_member(request.user)):
+            if experiment.is_retired:
+                raise PermissionDenied(
+                    detail="PermissionDenied: IS_RETIRED - unable to PUT/PATCH /experiments/{0} details".format(kwargs.get('pk')))
             modified = False
             # check for description
             if request.data.get('description', None):
@@ -327,6 +330,9 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         """
         experiment = get_object_or_404(self.get_queryset(), pk=pk)
         if request.user is experiment.experiment_creator or request.user in experiment.experiment_membership:
+            if experiment.is_retired:
+                raise PermissionDenied(
+                    detail="PermissionDenied: IS_RETIRED - unable to DELETE /experiments/{0}".format(pk))
             experiment.is_deleted = True
             experiment.is_retired = True
             experiment.modified_by = request.user.username
@@ -351,6 +357,10 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
             if str(request.method).casefold() in ['put', 'patch']:
                 if request.data.get('experiment_resources') or isinstance(request.data.get('experiment_resources'),
                                                                           list):
+                    if experiment.is_retired:
+                        raise PermissionDenied(
+                            detail="PermissionDenied: IS_RETIRED - unable to GET,PUT,PATCH /experiments/{0}/resources".format(
+                                kwargs.get('pk')))
                     resource_ids = request.data.get('experiment_resources')
                     if isinstance(resource_ids, list) and all([isinstance(item, int) for item in resource_ids]):
                         resources_orig = list(set(experiment.resources.all().values_list('id', flat=True)))
@@ -449,6 +459,10 @@ class ExperimentViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upda
         if experiment.is_creator(request.user) or experiment.is_member(request.user):
             if str(request.method).casefold() in ['put', 'patch', 'post']:
                 if request.data.get('experiment_members') or isinstance(request.data.get('experiment_members'), list):
+                    if experiment.is_retired:
+                        raise PermissionDenied(
+                            detail="PermissionDenied: IS_RETIRED - unable to GET,PUT,PATCH /experiments/{0}/membership".format(
+                                kwargs.get('pk')))
                     experiment_members = request.data.get('experiment_members')
                     if isinstance(experiment_members, list) and all(
                             [isinstance(item, int) for item in experiment_members]):
@@ -938,6 +952,10 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
         """
         cer = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
         if cer.experiment.is_creator(request.user) or cer.experiment.is_member(request.user):
+            if cer.experiment.is_retired:
+                raise PermissionDenied(
+                    detail="PermissionDenied: IS_RETIRED - unable to PUT/PATCH /canonical-experiment-resource/{0} details".format(
+                        kwargs.get('pk')))
             modified = False
             # check node_uhd
             if request.data.get('node_uhd', None):
@@ -968,34 +986,6 @@ class CanonicalExperimentResourceViewSet(GenericViewSet, RetrieveModelMixin, Lis
                 cer.modified_by = request.user.email
                 cer.save()
             return self.retrieve(request, pk=cer.id)
-
-
-        # if not .is_deleted and (project.is_creator(request.user) or project.is_owner(request.user)):
-        #     modified = False
-        #     # check for description
-        #     if request.data.get('description', None):
-        #         if len(request.data.get('description')) < PROJECT_MIN_DESC_LEN:
-        #             raise ValidationError(
-        #                 detail="description:  must be at least {0} chars long".format(PROJECT_MIN_DESC_LEN))
-        #         project.description = request.data.get('description')
-        #         modified = True
-        #     # check for is_public
-        #     if str(request.data.get('is_public')).casefold() in ['true', 'false']:
-        #         is_public = str(request.data.get('is_public')).casefold() == 'true'
-        #         project.is_public = is_public
-        #         modified = True
-        #     # check for name
-        #     if request.data.get('name', None):
-        #         if len(request.data.get('name')) < PROJECT_MIN_NAME_LEN:
-        #             raise ValidationError(
-        #                 detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
-        #         project.name = request.data.get('name')
-        #         modified = True
-        #     # save if modified
-        #     if modified:
-        #         project.modified_by = request.user.email
-        #         project.save()
-        #     return self.retrieve(request, pk=project.id)
         else:
             raise PermissionDenied(
                 detail="PermissionDenied: unable to PUT/PATCH /canonical-experiment-resource/{0} details".format(kwargs.get('pk')))

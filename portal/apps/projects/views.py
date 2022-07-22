@@ -193,9 +193,9 @@ def project_edit(request, project_id):
 @login_required
 def project_members(request, project_id):
     message = None
-    is_project_creator = False
-    is_project_owner = False
     project = get_object_or_404(AerpawProject, id=project_id)
+    is_project_creator = project.is_creator(request.user)
+    is_project_owner = project.is_owner(request.user)
     if request.method == "POST":
         form = ProjectMembershipForm(request.POST, instance=project)
         if form.is_valid():
@@ -210,8 +210,6 @@ def project_members(request, project_id):
             except Exception as exc:
                 message = exc
     else:
-        is_project_creator = project.is_creator(request.user)
-        is_project_owner = project.is_owner(request.user)
         initial_dict = {
             'project_members': list(project.project_members())
         }
@@ -231,9 +229,9 @@ def project_members(request, project_id):
 @login_required
 def project_owners(request, project_id):
     message = None
-    is_project_creator = False
-    is_project_owner = False
     project = get_object_or_404(AerpawProject, id=project_id)
+    is_project_creator = project.is_creator(request.user)
+    is_project_owner = project.is_owner(request.user)
     if request.method == "POST":
         form = ProjectMembershipForm(request.POST, instance=project)
         if form.is_valid():
@@ -248,8 +246,6 @@ def project_owners(request, project_id):
             except Exception as exc:
                 message = exc
     else:
-        is_project_creator = project.is_creator(request.user)
-        is_project_owner = project.is_owner(request.user)
         initial_dict = {
             'project_owners': list(project.project_owners())
         }

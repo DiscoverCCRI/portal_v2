@@ -162,8 +162,10 @@ def experiment_create(request):
 @csrf_exempt
 @login_required
 def experiment_edit(request, experiment_id):
-    message = None
-    project = None
+    message = 'INFO: selecting IS_RETIRED will permanently disable the experiment'
+    experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
+    p = ProjectViewSet()
+    project = p.retrieve(request=request, pk=experiment.project.id).data
     if request.method == "POST":
         form = ExperimentEditForm(request.POST)
         if form.is_valid():
@@ -182,9 +184,6 @@ def experiment_edit(request, experiment_id):
             except Exception as exc:
                 message = exc
     else:
-        experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
-        p = ProjectViewSet()
-        project = p.retrieve(request=request, pk=experiment.project.id).data
         form = ExperimentEditForm(instance=experiment, initial={'project_id': project.get('project_id')})
     return render(request,
                   'experiment_edit.html',
@@ -200,9 +199,9 @@ def experiment_edit(request, experiment_id):
 @login_required
 def experiment_members(request, experiment_id):
     message = None
-    is_experiment_creator = False
-    is_experiment_member = False
     experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
+    is_experiment_creator = experiment.is_creator(request.user)
+    is_experiment_member = experiment.is_member(request.user)
     if request.method == "POST":
         form = ExperimentMembershipForm(request.POST, instance=experiment)
         if form.is_valid():
@@ -218,8 +217,6 @@ def experiment_members(request, experiment_id):
             except Exception as exc:
                 message = exc
     else:
-        is_experiment_creator = experiment.is_creator(request.user)
-        is_experiment_member = experiment.is_member(request.user)
         initial_dict = {
             'experiment_members': list(experiment.experiment_members())
         }
@@ -238,7 +235,7 @@ def experiment_members(request, experiment_id):
 @csrf_exempt
 @login_required
 def experiment_resource_list(request, experiment_id):
-    message = 'Be sure to properly configure "Node UHD" and "Node Vehicle"'
+    message = 'INFO: Be sure to properly configure "Node UHD" and "Node Vehicle"'
     try:
         # check for query parameters
         current_page = 1
@@ -312,9 +309,9 @@ def experiment_resource_list(request, experiment_id):
 @login_required
 def experiment_resource_targets(request, experiment_id):
     message = None
-    is_experiment_creator = False
-    is_experiment_member = False
     experiment = get_object_or_404(AerpawExperiment, id=experiment_id)
+    is_experiment_creator = experiment.is_creator(request.user)
+    is_experiment_member = experiment.is_member(request.user)
     if request.method == "POST":
         form = ExperimentResourceTargetsForm(request.POST, instance=experiment)
         if form.is_valid():
@@ -330,8 +327,6 @@ def experiment_resource_targets(request, experiment_id):
             except Exception as exc:
                 message = exc
     else:
-        is_experiment_creator = experiment.is_creator(request.user)
-        is_experiment_member = experiment.is_member(request.user)
         initial_dict = {
             'experiment_resources': list(experiment.resources.all().values_list('id', flat=True))
         }
@@ -351,9 +346,9 @@ def experiment_resource_targets(request, experiment_id):
 @login_required
 def experiment_resource_target_edit(request, experiment_id, canonical_experiment_resource_id):
     message = None
-    is_experiment_creator = False
-    is_experiment_member = False
     cer = get_object_or_404(CanonicalExperimentResource, id=canonical_experiment_resource_id)
+    is_experiment_creator = cer.experiment.is_creator(request.user)
+    is_experiment_member = cer.experiment.is_member(request.user)
     if request.method == "POST":
         form = ExperimentResourceTargetModifyForm(request.POST, instance=cer)
         if form.is_valid():
@@ -371,8 +366,6 @@ def experiment_resource_target_edit(request, experiment_id, canonical_experiment
             except Exception as exc:
                 message = exc
     else:
-        is_experiment_creator = cer.experiment.is_creator(request.user)
-        is_experiment_member = cer.experiment.is_member(request.user)
         initial_dict = {
             'name': cer.resource.name,
             'node_type': cer.node_type,

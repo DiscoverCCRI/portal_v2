@@ -14,9 +14,9 @@ def profile(request):
     :param request:
     :return:
     """
+    message = None
     user = request.user
     user_data = UserViewSet()
-    message = None
     if request.method == 'POST':
         try:
             if request.POST.get('display_name'):
