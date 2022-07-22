@@ -111,6 +111,9 @@
                                 <strong><a href="{% url 'experiment_detail' experiment_id=experiment.experiment_id %}">
                                     {{ experiment.name }}
                                 </a></strong>
+                                {% if experiment.is_retired %}
+                                    <strong class="text-danger small">( RETIRED )</strong>
+                                {% endif %}
                                 - {{ experiment.description }}<br>
                                 - <em class="small">uuid: {{ experiment.experiment_uuid }}</em><br>
                                 - <em class="small">created {{ experiment.created_date|str_to_datetime }}
