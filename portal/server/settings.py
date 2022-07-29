@@ -13,15 +13,18 @@ https://docs.djangoproject.com/en/4.0/ref/settings/
 import os
 from datetime import timedelta
 from pathlib import Path
+from dotenv import load_dotenv, find_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(find_dotenv())
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY')
+SECRET_KEY = "25#au-8_)b5#i*=a9)*l2u2=@p0t#v3izx=7^=n0jl(%xv9_"
 
 # SECURITY WARNING: don't run with debug turned on in production!
 if os.getenv('DJANGO_DEBUG').casefold() == 'true':
@@ -29,8 +32,10 @@ if os.getenv('DJANGO_DEBUG').casefold() == 'true':
 else:
     DEBUG = False
 
+DEBUG = True
+
 # ALLOWED_HOSTS = ['.localhost', '127.0.0.1', '[::1]']
-ALLOWED_HOSTS = [os.getenv('DJANGO_ALLOWED_HOSTS')]
+ALLOWED_HOSTS = ['*']
 
 # Application definition
 
@@ -154,12 +159,12 @@ WSGI_APPLICATION = 'portal.server.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': os.getenv('POSTGRES_PORT')
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'postgres',
+        'USER': 'postgres',
+        'PASSWORD': 'postgres',
+        'HOST': '127.0.0.1',
+        'PORT': '5432',
     }
 }
 
@@ -186,7 +191,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = os.getenv('DJANGO_TIME_ZONE')
+TIME_ZONE = 'America/New_York'
 
 USE_I18N = True
 
@@ -216,24 +221,24 @@ LOGOUT_REDIRECT_URL = '/'
 # https://mozilla-django-oidc.readthedocs.io/en/stable/index.html
 
 # client id and client secret
-OIDC_RP_CLIENT_ID = os.getenv('OIDC_RP_CLIENT_ID', None)
-OIDC_RP_CLIENT_SECRET = os.getenv('OIDC_RP_CLIENT_SECRET', None)
+OIDC_RP_CLIENT_ID = 'cilogon:/client_id/3ffc6b0ef84419da4ca4e051812bc3e7'
+OIDC_RP_CLIENT_SECRET = 'YpYldaiiZ2-i3cccpy5JPRsBgjS1YngkBDZcfy0Z-UDlZQAu5KSedMm8y8u1GjAr5rejDy1P-XM0MxH95OpNLQ'
 # signing algorithm
-OIDC_RP_SIGN_ALGO = os.getenv('OIDC_RP_SIGN_ALGO')
-OIDC_OP_JWKS_ENDPOINT = os.getenv('OIDC_OP_JWKS_ENDPOINT')
+OIDC_RP_SIGN_ALGO = 'RS256'
+OIDC_OP_JWKS_ENDPOINT = 'https://cilogon.org/oauth2/certs'
 # OpenID Connect provider (CILogon)
-OIDC_OP_AUTHORIZATION_ENDPOINT = os.getenv('OIDC_OP_AUTHORIZATION_ENDPOINT')
-OIDC_OP_TOKEN_ENDPOINT = os.getenv('OIDC_OP_TOKEN_ENDPOINT')
-OIDC_OP_USER_ENDPOINT = os.getenv('OIDC_OP_USER_ENDPOINT')
+OIDC_OP_AUTHORIZATION_ENDPOINT = 'https://cilogon.org/authorize'
+OIDC_OP_TOKEN_ENDPOINT = 'https://cilogon.org/oauth2/token'
+OIDC_OP_USER_ENDPOINT = 'https://cilogon.org/oauth2/userinfo'
 # CILogon scopes (default: openid email profile org.cilogon.userinfo)
-OIDC_RP_SCOPES = os.getenv('OIDC_RP_SCOPES')
+OIDC_RP_SCOPES = "openid email profile org.cilogon.userinfo"
 # username algorithm
 OIDC_USERNAME_ALGO = 'portal.apps.users.oidc_users.generate_username'
 # SameSite prevents the browser from sending this cookie along with cross-site requests
 # Safari seems to need this set to None
 SESSION_COOKIE_SAMESITE = None
 # SessionRefresh expiry
-OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = int(os.getenv('OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS'))
+OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS = 3600
 
 OIDC_DRF_AUTH_BACKEND = 'mozilla_django_oidc.auth.OIDCAuthenticationBackend'
 

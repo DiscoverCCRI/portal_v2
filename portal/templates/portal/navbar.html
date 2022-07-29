@@ -1,7 +1,7 @@
 {% load static %}
-<nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+<nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <a class="navbar-brand navbar" href="{% url 'home' %}">
-        <img src="{% static 'images/logo/aerpaw-brand.png' %}" alt="aerpaw logo" height="40"/>
+        <img src="{% static 'images/logo/discoverlogo.jpeg' %}" alt="discover logo" height="40"/>
     </a>
     <button
             class="navbar-toggler"
@@ -37,11 +37,6 @@
                 {% if user.is_site_admin %}
                     <li class="nav-item">
                         <a class="nav-link" href="{% url 'home' %}">Administrators</a>
-                    </li>
-                {% endif %}
-                {% if user.is_operator or user.is_site_admin %}
-                    <li class="nav-item">
-                        <a class="nav-link" href="/api">API</a>
                     </li>
                 {% endif %}
             </ul>

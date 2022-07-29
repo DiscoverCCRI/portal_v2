@@ -29,7 +29,7 @@ done
 python manage.py collectstatic --noinput
 
 # development server
-python manage.py runserver 0.0.0.0:8000
+python manage.py runserver
 
 # uwsgi server
 #if [[ "${USE_DOT_VENV}" -eq 1 ]]; then
