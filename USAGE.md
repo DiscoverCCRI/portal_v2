@@ -39,9 +39,9 @@ A listing of this table will show two fields that need to be set to `True` for t
 
 ```console
 $ docker exec -u postgres portal-database psql -c "select id, is_staff, is_superuser, username, email, display_name from users_aerpawuser;"
- id | is_staff | is_superuser |    username     |      email      |  display_name
-----+----------+--------------+-----------------+-----------------+-----------------
-  1 | f        | f            | stealey@unc.edu | stealey@unc.edu | Michael Stealey
+ id | is_staff | is_superuser |   username    |     email     |   display_name
+----+----------+--------------+---------------+---------------+------------------
+  1 | f        | f            | lnn45@nau.edu | lnn45@nau.edu | Nhat Linh Nguyen
 ```
 
 Both `is_staff` and `is_superuser` need to be set to **True**
@@ -55,9 +55,9 @@ Verify changes
 
 ```console
 $ docker exec -u postgres portal-database psql -c "select id, is_staff, is_superuser, username, email, display_name from users_aerpawuser;"
- id | is_staff | is_superuser |    username     |      email      |  display_name
-----+----------+--------------+-----------------+-----------------+-----------------
-  1 | t        | t            | stealey@unc.edu | stealey@unc.edu | Michael Stealey
+ id | is_staff | is_superuser |   username    |     email     |   display_name
+----+----------+--------------+---------------+---------------+------------------
+  1 | t        | t            | lnn45@nau.edu | lnn45@nau.edu | Nhat Linh Nguyen
 ```
 
 At this point the `/admin` endpoint should be available to the user
@@ -109,10 +109,10 @@ $ curl -s -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: applic
   "previous": null,
   "results": [
     {
-      "display_name": "Michael Stealey",
-      "email": "stealey@unc.edu",
+      "display_name": "Nhat Linh Nguyen",
+      "email": "lnn45@nau.edu",
       "user_id": 1,
-      "username": "stealey@unc.edu"
+      "username": "lnn45@nau.edu"
     }
   ]
 }
@@ -129,12 +129,12 @@ $ curl -s -X "GET" -H "Authorization: Bearer ${ACCESS_TOKEN}" -H "Accept: applic
     "operator",
     "site_admin"
   ],
-  "display_name": "Michael Stealey",
-  "email": "stealey@unc.edu",
+  "display_name": "Nhat Linh Nguyen",
+  "email": "lnn45@nau.edu",
   "is_active": true,
   "openid_sub": "http://cilogon.org/serverA/users/242181",
   "user_id": 1,
-  "username": "stealey@unc.edu"
+  "username": "lnn45@nau.edu"
 }
 ```
 
