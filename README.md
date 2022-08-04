@@ -151,6 +151,8 @@ On completion you should observe the running site at: [http://127.0.0.1:8000/]()
 
 ![](docs/imgs/first-run.png)
 
+During the development mode, you can assign yourself to be the admin by following the instructions through this link: [Admin Right](https://github.com/nhatlinh300401/Discover_Summer22_Portal_v2/blob/main/USAGE.md#admin-rights)
+
 When finished use `ctrl-c` to stop the Django server and `docker compose stop` to stop the Postgres container
 
 If you want to reset everything back to clean us the `reset-to-clean.sh` script (stops/removes all running containers and purges all data)
