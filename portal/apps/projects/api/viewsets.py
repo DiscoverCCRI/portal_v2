@@ -12,8 +12,9 @@ from rest_framework.viewsets import GenericViewSet
 
 from portal.apps.experiments.api.serializers import ExperimentSerializerDetail
 from portal.apps.experiments.models import AerpawExperiment
-from portal.apps.projects.api.serializers import ProjectSerializerDetail, ProjectSerializerList, UserProjectSerializer
-from portal.apps.projects.models import AerpawProject, UserProject
+from portal.apps.projects.api.serializers import ProjectSerializerDetail, ProjectSerializerList, UserProjectSerializer, ProjectRequestSerializerDetail,\
+                                                 ProjectRequestSerializerList
+from portal.apps.projects.models import AerpawProject, UserProject, ProjectRequest
 from portal.apps.users.models import AerpawUser
 
 # constants
@@ -574,3 +575,165 @@ class UserProjectViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, Upd
         DELETE: user-project cannot be deleted via the API
         """
         raise MethodNotAllowed(method="DELETE: /user-project/{int:pk}")
+
+class ProjectRequestViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateModelMixin):
+    """
+    DISCOVER Projects
+    - paginated list
+    - retrieve one
+    - create
+    - update
+    - delete
+    - experiments
+    """
+    permission_classes = [permissions.IsAuthenticated]
+    queryset = ProjectRequest.objects.all().order_by('name').distinct()
+    serializer_class = ProjectRequestSerializerList
+
+    def get_queryset(self):
+        search = self.request.query_params.get('search', None)
+        user = self.request.user
+        if search:
+            if user.is_site_admin():
+                queryset = ProjectRequest.objects.filter(
+                    is_completed=False, name__icontains=search).order_by('name').distinct()
+            else:
+                queryset = ProjectRequest.objects.filter(
+                    Q(is_completed=False, name__icontains=search) | Q(requested_by=user)).order_by('name').distinct()
+        else:
+            if user.is_operator():
+                queryset = ProjectRequest.objects.filter(is_completed=False).order_by('name').distinct()
+            else:
+                queryset = ProjectRequest.objects.filter(
+                    Q(is_completed=False) | Q(requested_by=user)).order_by('name').distinct()
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        """
+        GET: list projects as paginated results
+        - created_date           - UTC timestamp
+        - description            - string
+        - is_public              - bool
+        - name                   - string
+        - project_creator (fk)   - user_ID
+        - project_id (pk)        - integer
+
+        Permission:
+        - active users
+        """
+        if request.user.is_active:
+            page = self.paginate_queryset(self.get_queryset())
+            if page:
+                serializer = ProjectSerializerList(page, many=True)
+            else:
+                serializer = ProjectSerializerList(self.get_queryset(), many=True)
+            response_data = []
+            for u in serializer.data:
+                du = dict(u)
+                # add project membership
+                project = AerpawProject.objects.get(pk=du.get('project_id'))
+                is_project_creator = project.is_creator(request.user)
+                is_project_member = project.is_member(request.user)
+                is_project_owner = project.is_owner(request.user)
+                response_data.append(
+                    {
+                        'created_date': du.get('created_date'),
+                        'description': du.get('description'),
+                        'is_public': du.get('is_public'),
+                        'membership': {
+                            'is_project_creator': is_project_creator,
+                            'is_project_member': is_project_member,
+                            'is_project_owner': is_project_owner
+                        },
+                        'name': du.get('name'),
+                        'project_creator': du.get('project_creator'),
+                        'project_id': du.get('project_id')
+                    }
+                )
+            if page:
+                return self.get_paginated_response(response_data)
+            else:
+                return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /projects list")
+
+    def create(self, request):
+        """
+        POST: request a new project
+        - description            - string
+        - is_public              - bool
+        - name                   - string
+
+        Permission:
+        - user is_pi
+        """
+        user = get_object_or_404(AerpawUser.objects.all(), pk=request.user.id)
+        if request.user.is_pi():
+            # validate description
+            description = request.data.get('description', None)
+            if not description or len(description) < PROJECT_MIN_DESC_LEN:
+                raise ValidationError(
+                    detail="description:  must be at least {0} chars long".format(PROJECT_MIN_DESC_LEN))
+            # validate is_pubic
+            is_public = str(request.data.get('is_public')).casefold() == 'true'
+            # validate name
+            name = request.data.get('name', None)
+            if not name or len(name) < PROJECT_MIN_NAME_LEN:
+                raise ValidationError(
+                    detail="name: must be at least {0} chars long".format(PROJECT_MIN_NAME_LEN))
+
+            # create project request
+            project_request = ProjectRequest()
+            project_request.requested_by = request.user
+            project_request.description = description
+            project_request.is_public = is_public
+            project_request.name = name
+            project_request.uuid = uuid4()
+            project_request.save()
+
+            return self.retrieve(request, pk=project_request.id)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to POST /projects")
+
+    def retrieve(self, request, *args, **kwargs):
+        """
+        GET: retrieve project request as single result
+        - created_date           - UTC timestamp
+        - description            - string
+        - is_public              - bool
+        - last_modified_by (fk)  - user_ID
+        - modified_date          - UTC timestamp
+        - name                   - string
+        - project_creator (fk)   - user_ID
+        - project_id (pk)        - integer
+        - project_members (fk)   - array of integer
+        - project_owners (fk)    - array of integer
+
+        Permission:
+        - user is_creator OR
+        - user is_project_member OR
+        - user is_project_owner OR
+        - user is_operator
+        """
+        project_request = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
+        if project_request.is_requester(request.user) or request.user.is_site_admin():
+            serializer = ProjectRequestSerializerDetail(project_request)
+            du = dict(serializer.data)
+            # add project membership
+            is_project_requester = project_request.is_requester(request.user)
+            response_data = {
+                'created_date': str(du.get('created_date')),
+                'description': du.get('description'),
+                'is_public': du.get('is_public'),
+                'name': du.get('name'),
+                'requested_by': du.get('requested_by'),
+                'project_id': du.get('project_id'),
+            }
+            if project_request.is_completed:
+                response_data['is_completed'] = du.get('is_completed')
+            return Response(response_data)
+        else:
+            raise PermissionDenied(
+                detail="PermissionDenied: unable to GET /projects/{0} details".format(kwargs.get('pk')))

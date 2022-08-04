@@ -1,6 +1,7 @@
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.utils import timezone
 
 from portal.apps.mixins.models import AuditModelMixin, BaseModel
 from portal.apps.profiles.models import AerpawUserProfile
@@ -95,3 +96,25 @@ class UserProject(BaseModel, models.Model):
         default=RoleType.PROJECT_MEMBER
     )
     user = models.ForeignKey(AerpawUser, related_name='project_user', on_delete=models.CASCADE)
+
+
+class ProjectRequest(BaseModel, models.Model):
+    # User = get_user_model()
+    name = models.CharField(max_length=255, blank=False, null=False)
+    uuid = models.CharField(max_length=255, primary_key=False, editable=False)
+    requested_by = models.ForeignKey(
+        AerpawUser,
+        related_name='project_requester',
+        on_delete=models.PROTECT
+    )
+    description = models.TextField()
+    is_public = models.BooleanField(default=False)
+    is_approved = models.BooleanField(default=False)
+    is_completed = models.BooleanField(default=False)
+    created_date = models.DateTimeField(default=timezone.now)
+
+    def __str__(self):
+        return self.requested_by
+
+    def is_requester(self, user: AerpawUser) -> bool:
+        return user == self.requested_by

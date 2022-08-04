@@ -22,10 +22,20 @@
                     {% endif %}
                     <button class="btn btn-primary mr-2" id="search_submit" type="submit">Search</button>
                 </form>
-                {% if user.is_pi %}
+                {% if user.is_pi and not user.is_site_admin%}
                     <button class="btn btn-success mr-2">
-                        <a href="{% url 'project_create' %}" class="unlink">Create New Project</a>
+                        <a href="{% url 'project_request' %}" class="unlink">Request New Project</a>
                     </button>
+                {% elif user.is_site_admin %}
+                    <div class="btn-group-vertical">
+                        <button class="btn btn-success mr-2 active">
+                            <a href="{% url 'project_create' %}" class="unlink">Create New Project</a>
+                        </button>
+
+                        <button class="btn btn-success mr-2">
+                            <a href="{% url 'project_request' %}" class="unlink">Request New Project</a>
+                        </button>
+                    </div>
                 {% endif %}
             </div>
             <table class="table table-striped table-bordered my-4">

@@ -4,7 +4,7 @@ from django.contrib.admin.widgets import FilteredSelectMultiple
 from portal.apps.projects.models import AerpawProject
 from portal.apps.users.models import AerpawUser
 
-
+# Form for creating the project
 class ProjectCreateForm(forms.ModelForm):
     name = forms.CharField(
         widget=forms.TextInput(attrs={'size': 60}),
@@ -22,6 +22,23 @@ class ProjectCreateForm(forms.ModelForm):
         model = AerpawProject
         fields = ['name', 'description', 'is_public']
 
+# Form to request the project
+class ProjectRequestForm(forms.ModelForm):
+    name = forms.CharField(
+        widget=forms.TextInput(attrs={'size': 60}),
+        required=True,
+        label='Name',
+    )
+
+    description = forms.CharField(
+        widget=forms.Textarea(attrs={'rows': 6, 'cols': 60}),
+        required=True,
+        label='Description',
+    )
+
+    class Meta:
+        model = AerpawProject
+        fields = ['name', 'description', 'is_public']
 
 class ProjectMembershipForm(forms.ModelForm):
     project_members = forms.ModelMultipleChoiceField(

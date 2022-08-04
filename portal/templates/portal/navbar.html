@@ -23,9 +23,26 @@
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'resource_list' %}">Resources</a>
                 </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
-                </li>
+
+                {% if user.is_site_admin %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            Projects
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'project_request' %}">Request New Project</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'project_requests' %}">Project Requests</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'project_list' %}">Projects List</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
+                    </li>
+                {% endif %}
+
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'experiment_list' %}">Experiments</a>
                 </li>
@@ -36,7 +53,7 @@
                 {% endif %}
                 {% if user.is_site_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">Administrators</a>
+                        <a class="nav-link" href="/admin">Administrators</a>
                     </li>
                 {% endif %}
             </ul>

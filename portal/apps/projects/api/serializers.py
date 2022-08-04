@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from portal.apps.projects.models import AerpawProject, UserProject
+from portal.apps.projects.models import AerpawProject, ProjectRequest, UserProject
 
 
 class UserProjectSerializer(serializers.ModelSerializer):
@@ -32,3 +32,17 @@ class ProjectSerializerDetail(serializers.ModelSerializer):
         model = AerpawProject
         fields = ['created_date', 'description', 'is_deleted', 'is_public', 'last_modified_by', 'modified_date',
                   'name', 'project_creator', 'project_id', 'project_membership']
+
+class ProjectRequestSerializerDetail(serializers.ModelSerializer):
+    project_request_id = serializers.IntegerField(source='id', read_only=True)
+
+    class Meta:
+        model = ProjectRequest
+        fields = ['created_date', 'description', 'is_approved', 'is_completed', 'is_public', 'name', 'requested_by', 'project_request_id']
+
+class ProjectRequestSerializerList(serializers.ModelSerializer):
+    project_id = serializers.IntegerField(source='id', read_only=True)
+
+    class Meta:
+        model = ProjectRequest
+        fields = ['created_date', 'description', 'is_approved', 'is_completed', 'is_public', 'name', 'requested_by', 'project_request_id']

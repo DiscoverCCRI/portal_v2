@@ -1,3 +1,4 @@
+import uuid
 from urllib.parse import parse_qs, urlparse
 
 from django.contrib.auth.decorators import login_required
@@ -5,11 +6,14 @@ from django.http import HttpRequest, QueryDict
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.request import Request
+from django.utils import timezone
+from uuid import UUID
 
-from portal.apps.projects.api.viewsets import ProjectViewSet
-from portal.apps.projects.forms import ProjectCreateForm, ProjectMembershipForm
-from portal.apps.projects.models import AerpawProject
+from portal.apps.projects.api.viewsets import ProjectViewSet, ProjectRequestViewSet
+from portal.apps.projects.forms import ProjectCreateForm, ProjectMembershipForm, ProjectRequestForm
+from portal.apps.projects.models import AerpawProject, ProjectRequest, UserProject
 from portal.server.settings import DEBUG, REST_FRAMEWORK
+from portal.apps.users.models import AerpawUser
 
 
 @csrf_exempt
@@ -259,3 +263,89 @@ def project_owners(request, project_id):
                       'is_project_creator': is_project_creator,
                       'is_project_owner': is_project_owner
                   })
+
+
+@csrf_exempt
+@login_required
+def project_request(request):
+    message = None
+    if request.method == "POST":
+        form = ProjectRequestForm(request.POST)
+        if form.is_valid():
+            try:
+                request.data = QueryDict('', mutable=True)
+                data_dict = form.data.dict()
+                if data_dict.get('is_public', '') == 'on':
+                    data_dict.update({'is_public': 'true'})
+                else:
+                    data_dict.update({'is_public': 'false'})
+                request.data.update(data_dict)
+                p = ProjectRequestViewSet(request=request)
+                request.data.update(data_dict)
+                project = p.create(request=request).data
+                print(project)
+                return redirect('project_list')
+            except Exception as exc:
+                message = exc
+    else:
+        form = ProjectRequestForm()
+    return render(request,
+                  'project_request.html',
+                  {
+                      'form': form,
+                      'message': message
+                  })
+
+@csrf_exempt
+@login_required
+def project_requests(request):
+    user_manager = AerpawUser.objects.get(id=request.user.id)
+    if request.method == "POST":
+        for key in request.POST.keys():
+            if not key == 'csrfmiddlewaretoken':
+                parse_key = key.rsplit('_', 1)
+                if parse_key[0] != 'description':
+                    project_request = ProjectRequest.objects.get(id=int(parse_key[1]))
+                    if request.POST.get(key) == 'Approve':
+                        is_approved = True
+                    else:
+                        is_approved = False
+        # get project creator and project's name
+        project_creator = AerpawUser.objects.get(id=int(project_request.requested_by_id))
+        project_name = str( project_request.name )
+
+        # check for approved project
+        if str(is_approved) == 'True':
+            # create new project
+            project = AerpawProject()
+            project.uuid = uuid.uuid4()
+            project.name = project_request.name
+            project.description = project_request.description
+            project.is_public = project_request.is_public
+
+            project.project_creator = project_request.requested_by
+            project.created_by = project_request.requested_by.username
+            project.created_date = timezone.now()
+            project.modified_by = project.created_by
+            project.modified_date = project.created_date
+            project.save()
+
+            # set creator as project owner
+            membership = UserProject()
+            membership.granted_by = project_request.requested_by
+            membership.project = project
+            membership.project_role = UserProject.RoleType.PROJECT_OWNER
+            membership.user = project_request.requested_by
+            membership.save()
+
+        # Save project request after admins actions
+        project_request.is_approved = is_approved
+        project_request.is_completed = True
+        project_request.save()
+
+    # else printing out the opened and closed project requests
+    open_u_reqs = ProjectRequest.objects.filter(is_completed=False).order_by('-created_date')
+    closed_u_reqs = ProjectRequest.objects.filter(is_completed=True).order_by('-created_date')
+    
+    # return the template
+    return render(request, 'project_requests.html', {'ou_reqs': open_u_reqs, 'cu_reqs': closed_u_reqs})
