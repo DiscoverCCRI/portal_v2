@@ -1,0 +1,27 @@
+# local-docker-compose.yml
+# - database port 5432 exposed to host (security risk)
+
+version: '3.9'
+services:
+
+  database:
+    # default port 5432
+    image: postgres:14
+    container_name: portal-database
+    networks:
+      - portal-network
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      PGDATA: /var/lib/postgresql/data
+#    volumes:
+#      - ${HOST_DB_DATA}:/var/lib/postgresql/data
+    restart: unless-stopped
+
+networks:
+  portal-network:
+    name: portal-network
+    driver: bridge

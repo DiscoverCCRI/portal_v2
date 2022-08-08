@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% load static resources_tags experiments_tags %}
+
+{% block title %}
+    Experiments
+{% endblock %}
+
+{% block content %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
+    {% if user.is_authenticated %}
+        {% if is_experiment_creator or is_experiment_member %}
+            <div class="container w-85">
+                <h2>Target: {{ cer.resource_id|id_to_resource_name }} <em class="text-primary" style="font-size: medium">
+                    (Experiment: {{ cer.experiment_id|id_to_experiment_name }})</em>
+                </h2>
+                Name: <strong>{{ cer.resource.name }}</strong><br><br>
+                <form id="edit-experiment" method="POST" class="post-form">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                </form>
+
+                Node Type: <strong>{{ cer.node_type }}</strong><br><br>
+                <button class="btn btn-success mr-2" type="submit" form="edit-experiment" value="save">Save
+                </button>
+                <button class="btn btn-secondary mr-2" value="cancel">
+                    <a href="{% url 'experiment_resource_list' experiment_id=experiment_id %}" class="unlink">Back</a>
+                </button>
+            </div>
+        {% else %}
+            You are not able to edit this experiment
+        {% endif %}
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">
+            <button class="message-btn btn btn-success">Login</button>
+        </a>
+    {% endif %}
+{% endblock %}

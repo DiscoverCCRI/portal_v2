@@ -1,0 +1,34 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}
+    Resources
+{% endblock %}
+
+{% block content %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
+    {% if user.is_authenticated %}
+        {% if user.is_operator %}
+            <div class="container w-85">
+                <h2>Create Resource</h2>
+                <form id="create-resource" method="POST" class="post-form">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                </form>
+                <button class="btn btn-success mr-2" type="submit" form="create-resource" value="save">Save</button>
+                <button class="btn btn-secondary mr-2" value="cancel">
+                    <a href="{% url 'resource_list' %}" class="unlink">Back</a>
+                </button>
+            </div>
+        {% else %}
+            You are not able to create a resource
+        {% endif %}
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">
+            <button class="message-btn btn btn-success">Login</button>
+        </a>
+    {% endif %}
+{% endblock %}

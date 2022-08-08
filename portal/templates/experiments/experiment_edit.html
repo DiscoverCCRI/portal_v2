@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static projects_tags experiments_tags %}
+
+{% block title %}
+    Experiments
+{% endblock %}
+
+{% block content %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
+    {% if user.is_authenticated %}
+        {% if project.membership.is_project_creator or project.membership.is_project_owner or project.membership.is_project_member %}
+            <div class="container w-85">
+                <h2>Edit: {{ experiment_id|id_to_experiment_name }} <em class="text-success" style="font-size: medium">
+                    (Project: {{ project.project_id|id_to_project_name }})</em>
+                </h2>
+                <form id="edit-experiment" method="POST" class="post-form">
+                    {% csrf_token %}
+                    {{ form.as_p }}
+                </form>
+                <button class="btn btn-success mr-2" type="submit" form="edit-experiment" value="save">Save
+                </button>
+                <button class="btn btn-secondary mr-2" value="cancel">
+                    <a href="{% url 'experiment_detail' experiment_id=experiment_id %}" class="unlink">Back</a>
+                </button>
+            </div>
+        {% else %}
+            You are not able to edit this experiment
+        {% endif %}
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">
+            <button class="message-btn btn btn-success">Login</button>
+        </a>
+    {% endif %}
+{% endblock %}

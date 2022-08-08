@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load static users_tags projects_tags %}
+
+{% block title %}
+    Experiments
+{% endblock %}
+
+{% block content %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
+    {% if user.is_authenticated %}
+        <div class="container w-85">
+            <div class="d-flex flex-row align-items-center justify-content-between">
+                <h2>Experiments</h2>
+                <form type="get" action="." style="margin: 0">
+                    {% csrf_token %}
+                    {% if search %}
+                        <input id="search" type="text" name="search" value="{{ search }}">
+                    {% else %}
+                        <input id="search" type="text" name="search" placeholder="search...">
+                    {% endif %}
+                    <button class="btn btn-primary mr-2" id="search_submit" type="submit">Search</button>
+                </form>
+            </div>
+            <table class="table table-striped table-bordered my-4">
+                <tbody>
+                <tr>
+                    <th>Name</th>
+                    <th>Description</th>
+                    <th>Project</th>
+                    <th>Canonical</th>
+                    <th>Created By</th>
+                    <th>Created Date</th>
+                    <th>My Membership</th>
+
+                    {% for experiment in experiments.results %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'experiment_detail' experiment_id=experiment.experiment_id %}">
+                                    {{ experiment.name }}
+                                </a>
+                                {% if experiment.is_retired %}
+                                    <strong class="text-danger small">(RETIRED)</strong>
+                                {% endif %}
+                            </td>
+                            <td>{{ experiment.description|truncatechars:40 }}</td>
+                            <td>
+                                <a href="{% url 'project_detail' project_id=experiment.project_id %}">
+                                    {{ experiment.project_id|id_to_project_name }}
+                                </a>
+                            </td>
+                            <td>{{ experiment.is_canonical }}</td>
+                            <td>{{ experiment.experiment_creator|id_to_username }}</td>
+                            <td>{{ experiment.created_date|str_to_datetime }}</td>
+                            <td style="text-align: center">
+                                {% if experiment.membership.is_experiment_creator %}
+                                    Creator,
+                                {% endif %}
+                                {% if experiment.membership.is_experiment_member %}
+                                    Member
+                                {% endif %}
+                                {% if not experiment.membership.is_experiment_creator and not experiment.membership.is_experiment_member %}
+                                    {% if experiment.is_retired %}
+                                        <em class="text-danger">IS RETIRED</em>
+                                    {% else %}
+                                        <button class="btn btn-success mr-2 disabled" id="experiment_join_request"
+                                                type="submit">
+                                            Request to Join
+                                        </button>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <div class="d-flex flex-row align-items-center justify-content-between">
+                {% if prev_page %}
+                    <button type="button" class="btn btn-secondary mr-2">
+                        {% if search %}
+                            <a href="{% url 'experiment_list' %}?page={{ prev_page }}&search={{ search }}"
+                               class="unlink">
+                                <em class="fa fa-fw fa-angles-left"></em> Page {{ prev_page }}
+                            </a>
+                        {% else %}
+                            <a href="{% url 'experiment_list' %}?page={{ prev_page }}" class="unlink">
+                                <em class="fa fa-fw fa-angles-left"></em> Page {{ prev_page }}
+                            </a>
+                        {% endif %}
+                    </button>
+                {% else %}
+                    <button class="btn btn-secondary mr-2 disabled">
+                        <a href="{% url 'experiment_list' %}?page={{ prev_page }}" class="unlink">
+                            <em class="fa fa-fw fa-angles-left"></em> n/a
+                        </a>
+                    </button>
+                {% endif %}
+                Results: {{ item_range }} of {{ count }}
+                {% if next_page %}
+                    <form type="get" action="." style="margin: 0">
+                        <button type="button" class="btn btn-secondary mr-2">
+                            {% if search %}
+                                <a href="{% url 'experiment_list' %}?page={{ next_page }}&search={{ search }}"
+                                   class="unlink">
+                                    Page {{ next_page }} <em class="fa fa-fw fa-angles-right"></em>
+                                </a>
+                            {% else %}
+                                <a href="{% url 'experiment_list' %}?page={{ next_page }}" class="unlink">
+                                    Page {{ next_page }} <em class="fa fa-fw fa-angles-right"></em>
+                                </a>
+                            {% endif %}
+                        </button>
+                    </form>
+                {% else %}
+                    <button class="btn btn-secondary mr-2 disabled">
+                        <a href="{% url 'experiment_list' %}?page={{ next_page }}" class="unlink">
+                            n/a <em class="fa fa-fw fa-angles-right"></em>
+                        </a>
+                    </button>
+                {% endif %}
+            </div>
+        </div>
+        {% if debug %}
+            <hr>
+            <pre>{{ experiments|pprint }}</pre>
+        {% endif %}
+    {% else %}
+        <p>You are not logged in</p>
+        <a href="{% url 'login' %}">
+            <button class="message-btn btn btn-success">Login</button>
+        </a>
+    {% endif %}
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% load static %}
+{% block title %}
+    DISCOVER Portal
+{% endblock %}
+
+{% block content %}
+    {% if not user.is_authenticated %}
+        <h3 class="text-center mt-4">Please log in to gain full access of DISCOVER Portal.</h3>
+    {% endif %}
+    <div class="homepage">
+        <img class="rounded my-4 img-fluid" width="25%"
+             src="{% static 'images/logo/discoverlogo.jpeg' %}" alt="discover logo">
+        <p>
+            <span class="h2">
+                <a href="https://discoverccri.org/" target="_blank" style="color:#076AE0;">DISCOVER</a>
+            </span>
+            <strong>(Distributed Sensing & Computing Over Sparse Environments)</strong>
+             is building a network of field sites to allow researchers to study distributed computing
+             and networking in rural and remote areas to empower detection and response to environmental
+             and civil disasters. The DISCOVER cyberinfrastructure will allow computer scientists and
+             engineers to study how IoT devices and networks can be designed to work in technically
+             challenging rural or remote areas.
+        </p>
+        <p>
+            <strong>User manuals, tutorials, and other relevant documentation can be found at the following links;
+                please refer to relevant instructions before attempting to use this Portal.</strong><br>
+            - <a href="https://discoverccri.org/" target="_blank" style="color:#076AE0;">DISCOVER main website</a> <br>
+            - <a href="https://discoverccri.org/" target="_blank" style="color: #076AE0;">DISCOVER wiki (IN PROGRESS)</a><br>
+        </p>
+    </div>
+{% endblock %}

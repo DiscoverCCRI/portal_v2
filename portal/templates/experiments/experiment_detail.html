@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static users_tags projects_tags resources_tags %}
+
+{% block title %}
+    Experiments
+{% endblock %}
+
+{% block content %}
+    {% if message %}
+        <div class="text-danger" style="font-size: large">{{ message }}</div>
+    {% endif %}
+    {% if user.is_authenticated and experiment %}
+        <div class="container w-85">
+            <div class="d-flex flex-row align-items-center justify-content-between">
+                <h2>{{ experiment.name }}
+                    {% if not experiment.is_retired %}
+                        <em class="text-success" style="font-size: medium">(is retired: No)</em>
+                    {% else %}
+                        <em class="text-danger" style="font-size: medium">(is retired: Yes)</em>
+                    {% endif %}
+                    <em class="text-primary" style="font-size: medium">(canonical: {{ experiment.is_canonical }} )</em>
+                    <em class="text-primary" style="font-size: medium">(state: {{ experiment.experiment_state }})</em>
+                </h2>
+                {% if experiment.is_deleted %}
+                    <a class="text-danger" style="font-size: medium"><strong>(DELETED)</strong></a>
+                {% endif %}
+                {% if not experiment.is_deleted or experiment.is_retired %}
+                    <div>
+                        <form action="{% url 'experiment_detail' experiment_id=experiment.experiment_id %}"
+                              method="POST">
+                            {% csrf_token %}
+                            {% if not experiment.is_retired and experiment.membership.is_experiment_creator or not experiment.is_retired and experiment.membership.is_experiment_member %}
+                                <button class="btn btn-success mr-2">
+                                    <a href="{% url 'experiment_edit' experiment_id=experiment.experiment_id %}"
+                                       class="unlink">Edit</a>
+                                </button>
+                            {% endif %}
+                            {% if experiment.membership.is_experiment_creator and not experiment.is_retired %}
+                                <input type="hidden" name="delete-experiment" value="true">
+                                <button class="btn btn-danger mr-2" type="submit">
+                                    <a onclick="return confirm('Are you sure you want to delete this experiment?')">Delete</a>
+                                </button>
+                            {% endif %}
+                            <button class="btn btn-secondary mr-2">
+                                <a href="{% url 'project_detail' project_id=experiment.project_id %}"
+                                   class="unlink">Back</a>
+                            </button>
+                        </form>
+                    </div>
+                {% endif %}
+            </div>
+            <table class="table table-striped table-bordered my-4">
+                <tbody>
+                <tr>
+                    <td style="width: 25%">Name</td>
+                    <td style="width: 75%"><strong>{{ experiment.name }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="width: 25%">Description</td>
+                    <td style="width: 75%"><strong>{{ experiment.description }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="width: 25%">State</td>
+                    <td style="width: 75%"><strong>{{ experiment.experiment_state }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="width: 25%">UUID</td>
+                    <td style="width: 75%"><strong>{{ experiment.experiment_uuid }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="width: 25%">Canonical experiment number</td>
+                    <td style="width: 75%"><strong>{{ experiment.canonical_number }}</strong></td>
+                </tr>
+                <tr>
+                    <td style="width: 25%">Project</td>
+                    <td style="width: 75%">
+                        <strong><a href="{% url 'project_detail' project_id=experiment.project_id %}">
+                            {{ experiment.project_id|id_to_project_name }}</a>
+                        </strong>
+                    </td>
+                </tr>
+                {% if experiment.membership.is_experiment_creator or experiment.membership.is_experiment_member %}
+                    <tr>
+                        <td style="width: 25%">
+                            Members
+                            {% if not experiment.is_retired %}
+                                {% if experiment.membership.is_experiment_creator or experiment.membership.is_experiment_member %}
+                                    <button class="btn btn-secondary mr-2" style="float: right">
+                                        <a href="{% url 'experiment_members' experiment_id=experiment.experiment_id %}"
+                                           class="unlink">Update</a>
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td style="width: 75%">
+                            {% for p in experiment.experiment_members %}
+                                <strong>{{ p.user_id|id_to_username }}</strong>
+                                <em class="small">(granted: {{ p.granted_date|str_to_datetime }}
+                                    by: {{ p.granted_by|id_to_username }})</em>
+                                <br>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="width: 25%">
+                            Targeted Resources
+                            {% if not experiment.is_retired %}
+                                {% if experiment.membership.is_experiment_creator or experiment.membership.is_experiment_member %}
+                                    <button class="btn btn-secondary mr-2" style="float: right">
+                                        <a href="{% url 'experiment_resource_list' experiment_id=experiment.experiment_id %}"
+                                           class="unlink">Update</a>
+                                    </button>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                        <td style="width: 75%">
+                            {% for resource in resources %}
+                                <strong><a href="{% url 'resource_detail' resource_id=resource.resource_id %}">
+                                    {{ resource.resource_id|id_to_resource_name }}</a>
+                                </strong>
+                                - <em class="small">node number:
+                                <strong>{{ resource.experiment_node_number }}</strong></em><br>
+                                - <em class="small">node type: <strong>{{ resource.node_type }}</strong></em><br>
+                                - <em class="small">node uhd: <strong>{{ resource.node_uhd }}</strong></em><br>
+                                - <em class="small">node vehicle <strong>{{ resource.node_vehicle }}</strong></em><br>
+                            {% endfor %}
+                        </td>
+                    </tr>
+                {% endif %}
+                </tbody>
+            </table>
+            <table style="width: 100%">
+                <tbody>
+                <tr style="font-size: small">
+                    <td style="width: 50%">
+                        <strong>created date</strong>: {{ experiment.created_date|str_to_datetime }}
+                    </td>
+                    {% if experiment.modified_date %}
+                        <td style="width: 50%">
+                            <strong>last modified date</strong>: {{ experiment.modified_date|str_to_datetime }}
+                        </td>
+                    {% endif %}
+                </tr>
+                <tr style="font-size: small">
+                    <td style="width: 50%">
+                        <strong>created by</strong>: {{ experiment.experiment_creator|id_to_username }}
+                    </td>
+                    {% if experiment.last_modified_by %}
+                        <td style="width: 50%">
+                            <strong>last modified by</strong>: {{ experiment.last_modified_by|id_to_username }}
+                        </td>
+                    {% endif %}
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        {% if debug %}
+            <hr>
+            <pre>{{ experiment|pprint }}</pre>
+            <pre>{{ resources|pprint }}</pre>
+        {% endif %}
+    {% else %}
+        <p>You are not allowed to view this experiment or are not logged in</p>
+        <a href="{% url 'login' %}">
+            <button class="message-btn btn btn-success">Login</button>
+        </a>
+    {% endif %}
+{% endblock %}
