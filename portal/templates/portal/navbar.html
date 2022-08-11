@@ -1,7 +1,7 @@
 {% load static %}
 <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
     <a class="navbar-brand navbar" href="{% url 'home' %}">
-        <img src="{% static 'images/logo/discoverlogo.jpeg' %}" alt="discover logo" height="40"/>
+        <img src="{% static 'images/logo/discoverlogo.jpeg' %}" alt="discover logo" height="100" style = "border: 2px solid white; margin-left: 2rem;"/>
     </a>
     <button
             class="navbar-toggler"
@@ -18,15 +18,24 @@
         {% if user.is_authenticated %}
             <ul class="navbar-nav me-auto order-0">
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'profile' %}">Profile</a>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color:white;">
+                            User
+                        </a>
+                        <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                            <li><a class="dropdown-item" href="{% url 'profile' %}">Profile</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'credential' %}">Credential</a></li>
+                        </ul>
+                    </li>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'resource_list' %}">Resources</a>
+                    <a class="nav-link" href="{% url 'resource_list' %}" style="color:white;">Resources</a>
                 </li>
 
                 {% if user.is_site_admin %}
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false" style="color:white;">
                             Projects
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
@@ -39,32 +48,32 @@
                     </li>
                 {% else %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'project_list' %}">Projects</a>
+                        <a class="nav-link" href="{% url 'project_list' %}" style="color:white;">Projects</a>
                     </li>
                 {% endif %}
 
                 <li class="nav-item">
-                    <a class="nav-link" href="{% url 'experiment_list' %}">Experiments</a>
+                    <a class="nav-link" href="{% url 'experiment_list' %}" style="color:white;">Experiments</a>
                 </li>
                 {% if user.is_operator %}
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'home' %}">Operators</a>
+                        <a class="nav-link" href="{% url 'home' %}" style="color:white;">Operators</a>
                     </li>
                 {% endif %}
                 {% if user.is_site_admin %}
                     <li class="nav-item">
-                        <a class="nav-link" href="/admin">Administrators</a>
+                        <a class="nav-link" href="/admin" style="color:white;">Administrators</a>
                     </li>
                 {% endif %}
             </ul>
             <div class="navbar-nav nav-item ms-auto order-5">
-                <a class="nav-link" href="{% url 'logout' %}">
+                <a class="nav-link" href="{% url 'logout' %}" style="color:white;">
                     <em class="fa fa-fw fa-sign-out"></em> Logout</a>
             </div>
         {% else %}
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item {{ login_page }}">
-                    <a class="nav-link" href="{% url 'login' %}">
+                    <a class="nav-link" href="{% url 'login' %}" style="color:white;">
                         <em class="fa fa-fw fa-sign-in"></em> Login</a>
                 </li>
             </ul>

@@ -177,7 +177,13 @@ class UserViewSet(GenericViewSet, RetrieveModelMixin, ListModelMixin, UpdateMode
         user = get_object_or_404(self.queryset, pk=kwargs.get('pk'))
         if request.user.id == user.id:
             # TODO: credential serializer and response
-            response_data = {}
+            serializer = UserSerializerCredentials(user)
+            du = dict(serializer.data)
+            response_data = {
+                'name': du.get('name'),
+                'public_key_credentials': du.get('public_key_credentials'),
+                'public_key_id': du.get('public_key_id')
+            }
             return Response(response_data)
         else:
             raise PermissionDenied(

@@ -53,6 +53,8 @@ class AerpawUser(BaseModel, AuditModelMixin, AbstractUser):
         on_delete=models.CASCADE,
         null=True
     )
+    public_key = models.TextField(null=True)
+    note_public_key = models.TextField(null=True)
     uuid = models.CharField(max_length=255, primary_key=False, editable=False)
 
     class Meta:
