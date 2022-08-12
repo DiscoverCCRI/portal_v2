@@ -58,6 +58,7 @@ INSTALLED_APPS = [
     'portal.apps.projects',  # aerpaw projects
     'portal.apps.experiments',  # aerpaw experiments
     'portal.apps.operations',  # aerpaw operations
+    'portal.apps.usercomms',  # discover messages
 ]
 
 # Add 'mozilla_django_oidc' authentication backend
@@ -139,6 +140,7 @@ TEMPLATES = [
             os.path.join(BASE_DIR, 'templates/projects'),
             os.path.join(BASE_DIR, 'templates/resources'),
             os.path.join(BASE_DIR, 'templates/rest_framework'),
+            os.path.join(BASE_DIR, 'templates/usercomms'),
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -262,6 +264,16 @@ LOGGING = {
 
 # Auth user model (custom user account)
 AUTH_USER_MODEL = 'users.AerpawUser'
+
+# DISCOVER Email for production (use only 1 email backend at a time)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = os.getenv('EMAIL_HOST')
+EMAIL_PORT = os.getenv('EMAIL_PORT')
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+EMAIL_ADMIN_USER = os.getenv('EMAIL_ADMIN_USER')
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
 
 # Django running behind Nginx reverse proxy
 USE_X_FORWARDED_HOST = True

@@ -8,6 +8,7 @@ APPS_LIST=(
     "projects"
     "experiments"
     "operations"
+    "usercomms"
 )
 
 FIXTURES_LIST=(

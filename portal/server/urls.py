@@ -57,4 +57,5 @@ urlpatterns = [
     path('profile/', include('portal.apps.profiles.urls')),  # profiles app
     path('projects/', include('portal.apps.projects.urls')),  # projects app
     path('resources/', include('portal.apps.resources.urls')),  # resources app
+    path('messages/', include('portal.apps.usercomms.urls')),  # messages app
 ]
